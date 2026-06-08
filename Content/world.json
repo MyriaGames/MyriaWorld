@@ -1,0 +1,23 @@
+{
+  "vertices": [
+    [-60, -60],
+    [ 60, -60],
+    [ 60,  60],
+    [-60,  60],
+    [-60, -180],
+    [ 60, -180],
+    [-60,  180],
+    [ 60,  180],
+    [180, -60],
+    [180,  60],
+    [-180, -60],
+    [-180,  60]
+  ],
+  "faces": [
+    { "v": [0, 1, 2, 3], "roomId": 1, "roomName": "Lumina",       "terrain": "grass" },
+    { "v": [4, 5, 1, 0], "roomId": 2, "roomName": "Forest Edge",  "terrain": "grass" },
+    { "v": [3, 2, 7, 6], "roomId": 3, "roomName": "South Fields", "terrain": "dirt"  },
+    { "v": [1, 8, 9, 2], "roomId": 4, "roomName": "East Gate",    "terrain": "stone" },
+    { "v": [10, 0, 3, 11], "roomId": 5, "roomName": "West Meadow","terrain": "grass" }
+  ]
+}

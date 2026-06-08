@@ -1,51 +1,55 @@
-﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
+using MyriaWorld.Screens;
+using MyriaWorld.UI;
 
 namespace MyriaWorld;
 
 public class Game1 : Game
 {
-    private GraphicsDeviceManager _graphics;
-    private SpriteBatch _spriteBatch;
+    public static Game1 Instance { get; private set; } = null!;
+
+    private readonly GraphicsDeviceManager _graphics;
+    private SpriteBatch _spriteBatch = null!;
+    private ScreenManager _screenManager = null!;
 
     public Game1()
     {
-        _graphics = new GraphicsDeviceManager(this);
+        Instance = this;
+        _graphics = new GraphicsDeviceManager(this)
+        {
+            PreferredBackBufferWidth  = 1280,
+            PreferredBackBufferHeight = 720
+        };
         Content.RootDirectory = "Content";
-        IsMouseVisible = true;
+        IsMouseVisible        = true;
+        Window.Title          = "Myria";
+        Window.AllowUserResizing = true;
     }
 
     protected override void Initialize()
     {
-        // TODO: Add your initialization logic here
-
+        _screenManager = new ScreenManager(GraphicsDevice, Content, Window);
+        Window.TextInput += (_, e) => _screenManager.OnTextInput(e.Character);
         base.Initialize();
     }
 
     protected override void LoadContent()
     {
         _spriteBatch = new SpriteBatch(GraphicsDevice);
-
-        // TODO: use this.Content to load your game content here
+        Assets.Load(GraphicsDevice, Content);
+        _screenManager.NavigateReplace(new MainMenuScreen());
     }
 
     protected override void Update(GameTime gameTime)
     {
-        if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
-            Exit();
-
-        // TODO: Add your update logic here
-
+        _screenManager.Update(gameTime);
         base.Update(gameTime);
     }
 
     protected override void Draw(GameTime gameTime)
     {
-        GraphicsDevice.Clear(Color.CornflowerBlue);
-
-        // TODO: Add your drawing code here
-
+        _screenManager.Draw(_spriteBatch);
         base.Draw(gameTime);
     }
 }
