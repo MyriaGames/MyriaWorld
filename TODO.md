@@ -33,7 +33,7 @@ Legend: ✅ Done | 🔧 In Progress | ⬜ Not Started | ⚠️ Partial
 
 | # | Item | Status | Notes |
 |---|------|--------|-------|
-| SC1 | Character creation screen | ⬜ Not Started | `MainMenuScreen.OnSinglePlayer` release path — needs a race + name entry screen before `LoadingScreen`. |
+| SC1 | Character creation screen | ⬜ Not Started | `MainMenuScreen.OnSingleCharacter` release path — needs a race + name entry screen before `LoadingScreen`. |
 | SC2 | Character selection screen | ⬜ Not Started | List saved local characters; pick one or create new. Feeds into `LoadingScreen`. |
 | SC3 | Settings screen | ⬜ Not Started | `MainMenuScreen.OnSettings` is a stub. Needs at minimum: resolution/fullscreen toggle, volume, keybinds. |
 | SC4 | Login / Register — server wiring | ⬜ Not Started | `LoginScreen.HandleLogin` and `HandleRegister` show placeholder text. Wire to `ServerApiService` REST calls then navigate to character selection. |

@@ -1,6 +1,6 @@
 using System.Text.Json;
 using MyriaLib.Entities.Maps;
-using MyriaLib.Entities.Players;
+using MyriaLib.Entities.Characters;
 using MyriaLib.Services;
 using MyriaLib.Systems.Enums;
 
@@ -9,7 +9,7 @@ namespace MyriaWorld.Services;
 /// <summary>
 /// Owns the "load all game data" step for MyriaWorld.  Call <see cref="Load"/>
 /// once on a background thread (see <c>LoadingScreen</c>), then call
-/// <see cref="PreparePlayer"/> on the main thread to wire skills to the player.
+/// <see cref="PrepareCharacter"/> on the main thread to wire skills to the player.
 /// </summary>
 public static class WorldDataService
 {
@@ -48,7 +48,7 @@ public static class WorldDataService
     /// Must be called after <see cref="Load"/> completes and before
     /// entering <c>WorldScreen</c>.
     /// </summary>
-    public static void PreparePlayer(Player player)
+    public static void PrepareCharacter(Character player)
         => MyriaLib.Services.Builder.SkillFactory.UpdateSkills(player);
 
     // ── Room queries ──────────────────────────────────────────────────────────
@@ -73,10 +73,10 @@ public static class WorldDataService
         .Replace('“', '"')   // left double quote
         .Replace('”', '"');  // right double quote
 
-    public static bool CanEnter(Player player, Room room)
+    public static bool CanEnter(Character player, Room room)
         => !IsLoaded || RoomService.CanEnterRoom(room, player);
 
-    public static string DeniedReason(Player player, Room room)
+    public static string DeniedReason(Character player, Room room)
     {
         if (room.RequirementType == RoomRequirementType.Level)
             return $"Requires Level {room.AccessLevel}";

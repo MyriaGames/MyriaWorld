@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using MyriaLib.Entities.Maps;
-using MyriaLib.Entities.Players;
+using MyriaLib.Entities.Characters;
 using MyriaLib.Entities.Skills;
 using MyriaWorld.Services;
 using MyriaWorld.UI;
@@ -12,7 +12,7 @@ namespace MyriaWorld.Screens;
 
 public class WorldScreen : Screen
 {
-    private readonly Player _player;
+    private readonly Character _player;
 
     // ── 3-D ───────────────────────────────────────────────────────────────────
     private BasicEffect _effect = null!;
@@ -21,7 +21,7 @@ public class WorldScreen : Screen
     private NavMesh         _navMesh     = null!;
     private NavMeshRenderer _navRenderer = null!;
 
-    // Player mesh
+    // Character mesh
     private VertexPositionColor[] _playerVerts = null!;
     private int[]                 _playerIdx   = null!;
 
@@ -58,7 +58,7 @@ public class WorldScreen : Screen
     private const float DeathRespawnDelay = 5f;
     private static readonly Vector3 RespawnPoint = Vector3.Zero;
 
-    // ── Player spatial ────────────────────────────────────────────────────────
+    // ── Character spatial ────────────────────────────────────────────────────────
     private Vector3 _pos = Vector3.Zero;
     private float   _yaw;
 
@@ -86,7 +86,7 @@ public class WorldScreen : Screen
     private Rectangle _skillBarBounds;   // used for right-click UI-hit test
 
     // ─────────────────────────────────────────────────────────────────────────
-    public WorldScreen(Player player) { _player = player; }
+    public WorldScreen(Character player) { _player = player; }
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -102,7 +102,7 @@ public class WorldScreen : Screen
         _navRenderer = new NavMeshRenderer();
         _navRenderer.Build(gd, _navMesh);
 
-        BuildPlayerMesh();
+        BuildCharacterMesh();
         ComputeSkillBarBounds();
 
         // Resolve starting face without announcing the room name
@@ -213,7 +213,7 @@ public class WorldScreen : Screen
                     _target.Position.X - _pos.X, 0f,
                     _target.Position.Z - _pos.Z);
                 dir.Normalize();
-                MovePlayer(dir, dt);
+                MoveCharacter(dir, dt);
             }
         }
         else
@@ -228,7 +228,7 @@ public class WorldScreen : Screen
                 if (kb.IsKeyDown(Keys.S) || kb.IsKeyDown(Keys.Down))  move -= camForward;
                 if (kb.IsKeyDown(Keys.A) || kb.IsKeyDown(Keys.Left))  move -= camRight;
                 if (kb.IsKeyDown(Keys.D) || kb.IsKeyDown(Keys.Right)) move += camRight;
-                if (move.LengthSquared() > 0.01f) { move.Normalize(); MovePlayer(move, dt); }
+                if (move.LengthSquared() > 0.01f) { move.Normalize(); MoveCharacter(move, dt); }
             }
             else if (_autoAttacking && _target is { IsAlive: true })
             {
@@ -242,7 +242,7 @@ public class WorldScreen : Screen
                         _target.Position.X - _pos.X, 0f,
                         _target.Position.Z - _pos.Z);
                     dir.Normalize();
-                    MovePlayer(dir, dt);
+                    MoveCharacter(dir, dt);
                 }
                 else
                 {
@@ -311,7 +311,7 @@ public class WorldScreen : Screen
 
     // ── Movement ──────────────────────────────────────────────────────────────
 
-    private void MovePlayer(Vector3 dir, float dt)
+    private void MoveCharacter(Vector3 dir, float dt)
     {
         Vector3 candidate    = _pos + dir * MoveSpeed * dt;
         int     candidateFace = _navMesh.FindFaceIndex(new Vector2(candidate.X, candidate.Z));
@@ -637,7 +637,7 @@ public class WorldScreen : Screen
             }
         }
 
-        // Player (hidden while dead)
+        // Character (hidden while dead)
         if (!_isDead)
         {
             _effect.World = Matrix.CreateRotationY(_yaw) * Matrix.CreateTranslation(_pos);
@@ -686,7 +686,7 @@ public class WorldScreen : Screen
 
     private void DrawHud(SpriteBatch sb)
     {
-        // ── Player info (top-left) ────────────────────────────────────────────
+        // ── Character info (top-left) ────────────────────────────────────────────
         string info = $"{_player.Name}   Lv. {_player.Level}  {_player.Class}";
         Gfx.Rect(sb, 0, 0, (int)Assets.FontNormal.MeasureString(info).X + 28, 40,
             new Color(0, 0, 0, 140));
@@ -889,7 +889,7 @@ public class WorldScreen : Screen
 
     // ── Geometry ──────────────────────────────────────────────────────────────
 
-    private void BuildPlayerMesh()
+    private void BuildCharacterMesh()
     {
         var verts = new List<VertexPositionColor>();
         var idx   = new List<int>();

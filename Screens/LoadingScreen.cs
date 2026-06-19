@@ -1,7 +1,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using MyriaLib.Entities.Players;
+using MyriaLib.Entities.Characters;
 using MyriaWorld.Services;
 using MyriaWorld.UI;
 
@@ -9,7 +9,7 @@ namespace MyriaWorld.Screens;
 
 public class LoadingScreen : Screen
 {
-    private readonly Player _player;
+    private readonly Character _player;
 
     private volatile bool _done;
     private volatile bool _failed;
@@ -18,7 +18,7 @@ public class LoadingScreen : Screen
     private float _spinnerAngle;
     private int _sw, _sh;
 
-    public LoadingScreen(Player player) { _player = player; }
+    public LoadingScreen(Character player) { _player = player; }
 
     // -----------------------------------------------------------------------
 
@@ -42,7 +42,7 @@ public class LoadingScreen : Screen
             try
             {
                 WorldDataService.Load();
-                WorldDataService.PreparePlayer(_player);
+                WorldDataService.PrepareCharacter(_player);
                 _done = true;
             }
             catch (Exception ex) { _errorMessage = ex.Message; _failed = true; }

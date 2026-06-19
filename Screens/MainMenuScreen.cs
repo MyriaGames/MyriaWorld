@@ -48,7 +48,7 @@ public class MainMenuScreen : Screen
         int btnY = _dividerY + 24;
         int btnH = 54;
 
-        _buttons.Add(new UiButton(new Rectangle(px, btnY, pw, btnH), "Single Player", Assets.FontNormal, OnSinglePlayer));
+        _buttons.Add(new UiButton(new Rectangle(px, btnY, pw, btnH), "Single Character", Assets.FontNormal, OnSingleCharacter));
         btnY += btnH + 10;
 
         // Thin divider #1
@@ -131,11 +131,11 @@ public class MainMenuScreen : Screen
         }
     }
 
-    private void OnSinglePlayer()
+    private void OnSingleCharacter()
     {
         if (GameDebug.Active)
         {
-            var player = GameDebug.CreateDummyPlayer();
+            var player = GameDebug.CreateDummyCharacter();
             ScreenManager.Instance.Navigate(new LoadingScreen(player));
         }
         // TODO: navigate to character creation / loading screen in release
