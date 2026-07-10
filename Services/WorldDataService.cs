@@ -1,6 +1,7 @@
 using System.Text.Json;
 using MyriaLib.Entities.Maps;
 using MyriaLib.Entities.Characters;
+using MyriaLib.Entities.NPCs;
 using MyriaLib.Services;
 using MyriaLib.Systems.Enums;
 
@@ -62,9 +63,16 @@ public static class WorldDataService
         return AsciiSafe(raw);
     }
 
+    public static string GetItemName(MyriaLib.Entities.Items.Item item)
+    {
+        if (_locale.TryGetValue(item.Name, out var s) && s.Length > 0) return AsciiSafe(s);
+        string raw = item.Name.StartsWith("item.") ? item.Name[5..] : item.Name;
+        return string.Join(" ", raw.Split('_').Select(w => w.Length > 0 ? char.ToUpper(w[0]) + w[1..] : w));
+    }
+
     // Replace typographic characters that fall outside the SpriteFont's
     // character regions (ASCII 32-126 + Latin-1 160-255).
-    private static string AsciiSafe(string s) => s
+    public static string AsciiSafe(string s) => s
         .Replace('—', '-')   // em dash
         .Replace('–', '-')   // en dash
         .Replace('…', '.')   // horizontal ellipsis
@@ -72,6 +80,14 @@ public static class WorldDataService
         .Replace('’', '\'')  // right single quote
         .Replace('“', '"')   // left double quote
         .Replace('”', '"');  // right double quote
+
+    // ── NPC name / description resolution ────────────────────────────────────
+
+    public static string GetNpcName(Npc npc) =>
+        AsciiSafe(_locale.TryGetValue(npc.NameKey, out var s) && s.Length > 0 ? s : npc.Id);
+
+    public static string GetNpcDesc(Npc npc) =>
+        AsciiSafe(_locale.TryGetValue(npc.DescriptionKey, out var s) ? s : "");
 
     public static bool CanEnter(Character player, Room room)
         => !IsLoaded || RoomService.CanEnterRoom(room, player);

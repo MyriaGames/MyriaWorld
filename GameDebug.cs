@@ -30,6 +30,8 @@ public static class GameDebug
         p.CurrentHealth = p.MaxHealth > 0 ? p.MaxHealth : 250;
         p.CurrentMana   = p.MaxMana   > 0 ? p.MaxMana   : 80;
 
+        p.Money.TryAdd(10_000); // 10 silver starting gold for debug
+
         return p;
     }
 }

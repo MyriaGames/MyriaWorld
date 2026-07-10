@@ -44,12 +44,17 @@ public static class Gfx
     }
 
     public static void Text(SpriteBatch sb, SpriteFont font, string text, Vector2 pos, Color c)
-        => sb.DrawString(font, text, pos, c);
+    {
+        var safe = Assets.SafeString(text);
+        if (safe.Length > 0) sb.DrawString(font, safe, pos, c);
+    }
 
     public static void TextCentered(SpriteBatch sb, SpriteFont font, string text, Rectangle r, Color c)
     {
-        var size = font.MeasureString(text);
-        var pos = new Vector2(r.X + (r.Width - size.X) / 2f, r.Y + (r.Height - size.Y) / 2f);
-        sb.DrawString(font, text, Vector2.Floor(pos), c);
+        var safe = Assets.SafeString(text);
+        if (safe.Length == 0) return;
+        var size = font.MeasureString(safe);
+        var pos  = new Vector2(r.X + (r.Width - size.X) / 2f, r.Y + (r.Height - size.Y) / 2f);
+        sb.DrawString(font, safe, Vector2.Floor(pos), c);
     }
 }

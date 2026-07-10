@@ -15,6 +15,11 @@
         <Start>&#160;</Start>
         <End>&#255;</End>
       </CharacterRegion>
+      <!-- General Punctuation: en dash, em dash, ellipsis, smart quotes, bullet, etc. -->
+      <CharacterRegion>
+        <Start>&#8192;</Start>
+        <End>&#8303;</End>
+      </CharacterRegion>
     </CharacterRegions>
   </Asset>
 </XnaContent>

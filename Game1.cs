@@ -1,6 +1,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MyriaWorld.Screens;
+using MyriaWorld.Services;
 using MyriaWorld.UI;
 
 namespace MyriaWorld;
@@ -9,26 +10,32 @@ public class Game1 : Game
 {
     public static Game1 Instance { get; private set; } = null!;
 
-    private readonly GraphicsDeviceManager _graphics;
+    /// <summary>Exposed so SettingsService can change resolution / fullscreen.</summary>
+    public static GraphicsDeviceManager Display { get; private set; } = null!;
+
     private SpriteBatch _spriteBatch = null!;
     private ScreenManager _screenManager = null!;
 
     public Game1()
     {
         Instance = this;
-        _graphics = new GraphicsDeviceManager(this)
+        Display  = new GraphicsDeviceManager(this)
         {
             PreferredBackBufferWidth  = 1280,
-            PreferredBackBufferHeight = 720
+            PreferredBackBufferHeight = 720,
         };
-        Content.RootDirectory = "Content";
-        IsMouseVisible        = true;
-        Window.Title          = "Myria";
+        Content.RootDirectory    = "Content";
+        IsMouseVisible           = true;
+        Window.Title             = "Myria";
         Window.AllowUserResizing = true;
     }
 
     protected override void Initialize()
     {
+        // Apply saved display settings before the first frame
+        SettingsService.Load();
+        SettingsService.Apply();
+
         _screenManager = new ScreenManager(GraphicsDevice, Content, Window);
         Window.TextInput += (_, e) => _screenManager.OnTextInput(e.Character);
         base.Initialize();

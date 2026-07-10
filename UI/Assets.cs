@@ -20,6 +20,37 @@ public static class Assets
         Dot = CreateCircle(gd, 14);
     }
 
+    // ── Text safety ───────────────────────────────────────────────────────────
+    // Supported Unicode ranges (must match the CharacterRegions in *.spritefont):
+    //   0x0020–0x007E  ASCII printable
+    //   0x00A0–0x00FF  Latin-1 Supplement  (×, é, ä, ñ, …)
+    //   0x2000–0x206F  General Punctuation (—, –, …, ", ", ', ')
+    //   0x000A         newline (handled natively by SpriteBatch)
+
+    public static string SafeString(string? text)
+    {
+        if (text is null) return "";
+
+        // Fast path: scan for any unsupported char before allocating
+        bool dirty = false;
+        foreach (char c in text)
+        {
+            if (!IsSupported(c)) { dirty = true; break; }
+        }
+        if (!dirty) return text;
+
+        var sb = new System.Text.StringBuilder(text.Length);
+        foreach (char c in text)
+            sb.Append(IsSupported(c) ? c : '?');
+        return sb.ToString();
+    }
+
+    private static bool IsSupported(char c) =>
+        c == '\n'                       ||   // newline
+        (c >= 0x0020 && c <= 0x007E)   ||   // ASCII printable
+        (c >= 0x00A0 && c <= 0x00FF)   ||   // Latin-1 Supplement
+        (c >= 0x2000 && c <= 0x206F);        // General Punctuation
+
     private static Texture2D CreateCircle(GraphicsDevice gd, int radius)
     {
         int size = radius * 2;

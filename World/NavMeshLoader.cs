@@ -7,7 +7,10 @@ public static class NavMeshLoader
 {
     // JSON DTOs
     private sealed record MeshDto(float[][] Vertices, FaceDto[] Faces);
-    private sealed record FaceDto(int[] V, int? RoomId, string? RoomName, string? Terrain);
+    private sealed record FaceDto(int[] V, int? RoomId, string? RoomName, string? Terrain,
+                                  NpcPlacementDto[]? Npcs, GatherNodeDto[]? GatherNodes);
+    private sealed record NpcPlacementDto(string Id, float X, float Z);
+    private sealed record GatherNodeDto(string Type, string Label, float X, float Z);
 
     private static readonly JsonSerializerOptions _opts = new()
     {
@@ -29,6 +32,12 @@ public static class NavMeshLoader
             RoomId        = f.RoomId,
             RoomName      = f.RoomName ?? "",
             Terrain       = f.Terrain  ?? "grass",
+            NpcPlacements = f.Npcs?.Select(n => new NpcPlacement(n.Id, n.X, n.Z)).ToArray()
+                            ?? [],
+            GatherNodes   = f.GatherNodes?.Select(g => new GatherNodePlacement(
+                                Enum.Parse<MyriaLib.Systems.Enums.GatheringType>(g.Type, ignoreCase: true),
+                                g.Label, g.X, g.Z)).ToArray()
+                            ?? [],
         }).ToArray();
 
         ComputePortals(faces);

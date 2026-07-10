@@ -1,23 +1,96 @@
 {
   "vertices": [
-    [-60, -60],
-    [ 60, -60],
-    [ 60,  60],
-    [-60,  60],
+    [-60,  -60],
+    [ 60,  -60],
+    [ 60,   60],
+    [-60,   60],
     [-60, -180],
     [ 60, -180],
     [-60,  180],
     [ 60,  180],
-    [180, -60],
-    [180,  60],
+    [180,  -60],
+    [180,   60],
     [-180, -60],
-    [-180,  60]
+    [-180,  60],
+    [-60, -300],
+    [ 60, -300],
+    [300,  -60],
+    [300,   60],
+    [-60,  300],
+    [ 60,  300],
+    [-60, -420],
+    [ 60, -420],
+    [420,  -60],
+    [420,   60],
+    [-60,  420],
+    [ 60,  420],
+    [180,  180],
+    [300,  180]
   ],
   "faces": [
-    { "v": [0, 1, 2, 3], "roomId": 1, "roomName": "Lumina",       "terrain": "grass" },
-    { "v": [4, 5, 1, 0], "roomId": 2, "roomName": "Forest Edge",  "terrain": "grass" },
-    { "v": [3, 2, 7, 6], "roomId": 3, "roomName": "South Fields", "terrain": "dirt"  },
-    { "v": [1, 8, 9, 2], "roomId": 4, "roomName": "East Gate",    "terrain": "stone" },
-    { "v": [10, 0, 3, 11], "roomId": 5, "roomName": "West Meadow","terrain": "grass" }
+    {
+      "v": [0, 1, 2, 3], "roomId": 11, "roomName": "Hydea", "terrain": "stone",
+      "npcs": [
+        { "id": "healer_default",    "x": -15, "z": -14 },
+        { "id": "trader_default",    "x":  15, "z": -14 },
+        { "id": "artificer_default", "x": -15, "z":  14 },
+        { "id": "villager_lumina",   "x":  15, "z":  14 }
+      ]
+    },
+    {
+      "v": [4, 5, 1, 0], "roomId": 59, "roomName": "Mine District", "terrain": "dirt",
+      "npcs": [
+        { "id": "miner_master", "x": -8, "z": -105 }
+      ]
+    },
+    {
+      "v": [3, 2, 7, 6], "roomId": 47, "roomName": "South Gate", "terrain": "stone"
+    },
+    {
+      "v": [1, 8, 9, 2], "roomId": 13, "roomName": "East District", "terrain": "stone",
+      "npcs": [
+        { "id": "skill_master_lumina", "x": 100, "z": -10 },
+        { "id": "villager_default",    "x": 130, "z":  15 }
+      ]
+    },
+    {
+      "v": [10, 0, 3, 11], "roomId": 16, "roomName": "West Gate", "terrain": "grass",
+      "npcs": [
+        { "id": "villager_default", "x": -100, "z": 12 }
+      ]
+    },
+    {
+      "v": [12, 13, 5, 4], "roomId": 1, "roomName": "Lumina Caves", "terrain": "stone",
+      "gatherNodes": [
+        { "type": "Ore", "label": "Iron Vein", "x": -22, "z": -240 },
+        { "type": "Ore", "label": "Iron Vein", "x":  28, "z": -215 }
+      ]
+    },
+    {
+      "v": [8, 14, 15, 9], "roomId": 48, "roomName": "Nuvmito Trail", "terrain": "grass"
+    },
+    {
+      "v": [6, 7, 17, 16], "roomId": 14, "roomName": "Plateau Pass", "terrain": "stone"
+    },
+    {
+      "v": [18, 19, 13, 12], "roomId": 2, "roomName": "Echo Chamber", "terrain": "stone",
+      "gatherNodes": [
+        { "type": "Ore", "label": "Iron Vein", "x":   5, "z": -360 },
+        { "type": "Ore", "label": "Iron Vein", "x": -28, "z": -400 }
+      ]
+    },
+    {
+      "v": [14, 20, 21, 15], "roomId": 25, "roomName": "Nuvmito Turn", "terrain": "grass"
+    },
+    {
+      "v": [16, 17, 23, 22], "roomId": 15, "roomName": "Plateau South", "terrain": "stone"
+    },
+    {
+      "v": [9, 15, 25, 24], "roomId": 21, "roomName": "Whispering Woods", "terrain": "grass",
+      "gatherNodes": [
+        { "type": "Tree", "label": "Old-Growth Pine", "x": 210, "z":  88 },
+        { "type": "Tree", "label": "Mossy Oak",        "x": 265, "z": 148 }
+      ]
+    }
   ]
 }

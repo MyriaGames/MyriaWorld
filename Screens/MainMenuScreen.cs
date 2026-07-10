@@ -133,15 +133,18 @@ public class MainMenuScreen : Screen
 
     private void OnSingleCharacter()
     {
+        /*
         if (GameDebug.Active)
         {
+            // Debug shortcut: skip character selection and jump straight in
             var player = GameDebug.CreateDummyCharacter();
             ScreenManager.Instance.Navigate(new LoadingScreen(player));
-        }
-        // TODO: navigate to character creation / loading screen in release
+            return;
+        }*/
+        ScreenManager.Instance.Navigate(new CharacterSelectScreen());
     }
     private void OnLogin()     => ScreenManager.Instance.Navigate(new LoginScreen(isLogin: true));
     private void OnRegister()  => ScreenManager.Instance.Navigate(new LoginScreen(isLogin: false));
-    private void OnSettings()  { /* TODO */ }
+    private void OnSettings()  => ScreenManager.Instance.Navigate(new SettingsScreen());
     private void OnQuit()      => Environment.Exit(0);
 }
