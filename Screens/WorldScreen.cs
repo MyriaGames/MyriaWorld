@@ -3,10 +3,16 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using MyriaLib.Entities.Maps;
 using MyriaLib.Entities.Characters;
+using MyriaLib.Entities.NPCs;
 using MyriaLib.Entities.Skills;
+using MyriaLib.Services.Manager;
+using MyriaLib.Systems;
+using MyriaLib.Systems.Enums;
+using MyriaLib.Systems.Events;
 using MyriaWorld.Services;
 using MyriaWorld.UI;
 using MyriaWorld.World;
+using Sfx = MyriaWorld.Services.AudioService.Sfx;
 
 namespace MyriaWorld.Screens;
 
@@ -51,6 +57,69 @@ public class WorldScreen : Screen
     // Double-click tracking for auto-attack start
     private double        _lastClickTime;
     private WorldMonster? _lastClickedMonster;
+
+    // ── Loot drops ────────────────────────────────────────────────────────────
+    private readonly List<WorldLootDrop> _lootDrops = new();
+    private const float PickupRange = 3f;
+
+    // ── Inventory overlay ─────────────────────────────────────────────────────
+    private InventoryOverlay _inventoryOverlay = null!;
+    private bool             _inventoryOpen;
+
+    // Minimap
+    private MinimapRenderer _minimapRenderer = null!;
+
+    // NPCs, dialogue, shop & quest log
+    private readonly List<WorldNpc>    _worldNpcs         = new();
+    private readonly DialogueOverlay   _dialogueOverlay   = new();
+    private readonly ShopOverlay       _shopOverlay       = new();
+    private readonly QuestLogOverlay   _questLogOverlay   = new();
+    private readonly ZoneTransitionOverlay _zoneOverlay   = new();
+    private readonly PauseMenuOverlay  _pauseMenu         = new();
+    private readonly DayNightCycle     _dayNight          = new();
+    private readonly WeatherSystem    _weather           = new();
+    private readonly WorldMapOverlay  _worldMap          = new();
+    private readonly HashSet<int>     _visitedFaces      = new();
+
+    // ── Static world decorations ──────────────────────────────────────────────
+    private VertexPositionColor[] _decoVerts = [];
+    private int[]                 _decoIdx   = [];
+
+    // ── Buildings (NPC placement) ─────────────────────────────────────────────
+    private IReadOnlyList<WorldBuilding> _buildings = [];
+
+    // ── Waypoints ─────────────────────────────────────────────────────────────
+    private IReadOnlyList<WorldWaypoint>  _waypoints         = [];
+    private readonly HashSet<int>         _discoveredWpRooms = new();
+    private readonly FastTravelOverlay    _fastTravel        = new();
+
+    // ── Terrain height data ───────────────────────────────────────────────────
+    private float[] _heights = [];
+
+    // ── Zone / ambient tracking ───────────────────────────────────────────────
+    private string _currentTerrain = "grass";
+
+    // ── Footstep timer ────────────────────────────────────────────────────────
+    private float _footstepTimer;
+    private const float FootstepInterval = 0.38f;
+
+    // ── Quest tracking ────────────────────────────────────────────────────────
+    private Quest? _trackedQuest;   // the active quest shown in the HUD
+
+    // ── Quest / save notifications ────────────────────────────────────────────
+    private string _questMsg      = "";
+    private float  _questMsgTimer;
+    private const float QuestMsgTime = 3.5f;
+
+    // ── Mana regeneration ─────────────────────────────────────────────────────
+    private float _manaRegenTimer;
+    private const float ManaRegenInterval = 3f;   // seconds between MP ticks
+    private const int   ManaRegenAmount   = 1;    // MP restored per tick
+
+    // ── Level-up banner ───────────────────────────────────────────────────────
+    private string _levelUpMsg   = "";
+    private float  _levelUpTimer;
+    private const float LevelUpBannerTime = 3f;
 
     // ── Death / respawn ───────────────────────────────────────────────────────
     private bool  _isDead;
@@ -99,14 +168,43 @@ public class WorldScreen : Screen
         _effect = new BasicEffect(gd) { VertexColorEnabled = true, LightingEnabled = false };
 
         _navMesh     = NavMeshLoader.Load(Path.Combine("Content", "world.json"));
+        _heights     = TerrainHeights.Build(_navMesh);
         _navRenderer = new NavMeshRenderer();
-        _navRenderer.Build(gd, _navMesh);
+        _navRenderer.Build(gd, _navMesh, _heights);
 
         BuildCharacterMesh();
         ComputeSkillBarBounds();
 
+        _inventoryOverlay = new InventoryOverlay(_player);
+        _player.LeveledUp += OnLevelUp;
+
+        _pauseMenu.Init(
+            onResume: () => _pauseMenu.Close(),
+            onSave:   () => { SaveService.Save(_player, _pos, _discoveredWpRooms); ShowQuestMsg("Game saved.", new Color(120, 200, 120)); _pauseMenu.Close(); },
+            onLoad:   () => { if (SaveService.HasSave()) { var (p, wps) = SaveService.Load(_player); _pos = p; foreach (var r in wps) _discoveredWpRooms.Add(r); ShowQuestMsg("Game loaded.", new Color(120, 200, 180)); } _pauseMenu.Close(); },
+            onQuit:   () => { ScreenManager.Instance.GoBack(); });
+
+        _minimapRenderer = new MinimapRenderer();
+        _minimapRenderer.Build(gd, _navMesh, _effect);
+        _worldMap.Build(gd, _navMesh, _effect, _sw, _sh);
+        (_decoVerts, _decoIdx, _buildings, _waypoints) = WorldDecorationSpawner.Build(_navMesh, _heights);
+
+        _worldNpcs.AddRange(WorldNpc.SpawnAll(_navMesh, _buildings));
+        foreach (var npc in _worldNpcs)
+        {
+            int nf = _navMesh.FindFaceIndex(new Vector2(npc.Position.X, npc.Position.Z));
+            if (nf >= 0)
+                npc.Position = new Vector3(npc.Position.X,
+                    TerrainHeights.GetHeight(_heights, _navMesh, nf, npc.Position.X, npc.Position.Z),
+                    npc.Position.Z);
+        }
+
+        AudioService.Init();
+        AudioService.SetAmbientZone(_currentTerrain);
+
         // Resolve starting face without announcing the room name
         UpdateFace(_navMesh.FindFaceIndex(new Vector2(_pos.X, _pos.Z)), announce: false);
+        _pos.Y = TerrainHeights.GetHeight(_heights, _navMesh, _currentFace, _pos.X, _pos.Z);
     }
 
     public override void OnEnter()
@@ -120,8 +218,19 @@ public class WorldScreen : Screen
 
     public override void OnExit()
     {
+        _player.LeveledUp -= OnLevelUp;
         Game1.Instance.IsMouseVisible = true;
         _navRenderer.Dispose();
+        _minimapRenderer.Dispose();
+        _worldMap.Dispose();
+        AudioService.Dispose();
+    }
+
+    private void OnLevelUp(object? sender, LevelUpEventArgs e)
+    {
+        _levelUpMsg   = $"Level Up!  {e.NewLevel}";
+        _levelUpTimer = LevelUpBannerTime;
+        AudioService.Play(Sfx.LevelUp, 0.85f);
     }
 
     // ── Update ────────────────────────────────────────────────────────────────
@@ -132,12 +241,106 @@ public class WorldScreen : Screen
         var   kb = Keyboard.GetState();
         var   ms = Mouse.GetState();
 
-        // ESC
-        if (kb.IsKeyDown(Keys.Escape))
+        // ESC / I: inventory toggle or world exit — use WasKeyJustPressed so holding
+        // ESC to close inventory doesn't immediately exit the world on the next frame.
+        bool escJust = WasKeyJustPressed(kb, Keys.Escape);
+        bool iJust   = WasKeyJustPressed(kb, Keys.I);
+        bool fJust   = WasKeyJustPressed(kb, Keys.F);
+        bool yJust   = WasKeyJustPressed(kb, Keys.Y);
+        bool qJust   = WasKeyJustPressed(kb, Keys.Q);
+        bool mJust   = WasKeyJustPressed(kb, Keys.M);
+
+        // Pause menu: block all other input
+        if (_pauseMenu.IsOpen)
         {
-            ScreenManager.Instance.GoBack();
+            _pauseMenu.Update();
+            if (escJust) _pauseMenu.Close();
+            _prevKb    = kb;
+            _prevMouse = ms;
             return;
         }
+
+        // Quest log: block all other input
+        if (_questLogOverlay.IsOpen)
+        {
+            _questLogOverlay.Update(ms, _prevMouse);
+            var trackReq = _questLogOverlay.ConsumeTrackRequest();
+            if (trackReq != null) _trackedQuest = trackReq;
+            if (escJust || qJust) _questLogOverlay.Close();
+            _prevKb    = kb;
+            _prevMouse = ms;
+            return;
+        }
+
+        // Shop overlay: block all other input
+        if (_shopOverlay.IsOpen)
+        {
+            _shopOverlay.Update(ms, _prevMouse);
+            _shopOverlay.UpdateDt(dt);
+            if (escJust) _shopOverlay.Close();
+            _prevKb    = kb;
+            _prevMouse = ms;
+            return;
+        }
+
+        // Dialogue: highest priority — close on F or ESC, accept quest on Y
+        if (_dialogueOverlay.IsOpen)
+        {
+            if (_dialogueOverlay.Mode == DialogueMode.QuestAccept && yJust)
+            {
+                AcceptPendingQuest();
+            }
+            else if (_dialogueOverlay.Mode == DialogueMode.QuestReturn && (escJust || fJust))
+            {
+                CompletePendingQuest();
+            }
+            else if (escJust || fJust)
+            {
+                _dialogueOverlay.Close();
+            }
+            _prevKb    = kb;
+            _prevMouse = ms;
+            return;
+        }
+
+        if (_worldMap.IsOpen)
+        {
+            if (escJust || mJust) { _worldMap.Close(); _prevKb = kb; _prevMouse = ms; }
+            return;
+        }
+
+        if (_fastTravel.IsOpen)
+        {
+            _fastTravel.Update(ms, _prevMouse);
+            if (escJust || fJust) _fastTravel.Close();
+            var dest = _fastTravel.ConsumeTravel();
+            if (dest != null) DoFastTravel(dest);
+            _prevKb    = kb;
+            _prevMouse = ms;
+            return;
+        }
+
+        if (_inventoryOpen)
+        {
+            if (escJust || iJust)
+            {
+                _inventoryOpen = false;
+                _prevKb        = kb;
+                _lastMousePos  = new Point(ms.X, ms.Y);
+            }
+            else
+            {
+                _prevKb       = kb;
+                _prevMouse    = ms;
+                _lastMousePos = new Point(ms.X, ms.Y);
+            }
+            return;
+        }
+
+        if (escJust) { _pauseMenu.Open(_sw, _sh); AudioService.Play(Sfx.OpenMenu, 0.4f); _prevKb = kb; _prevMouse = ms; return; }
+        if (iJust)   { _inventoryOpen = true; AudioService.Play(Sfx.OpenMenu, 0.5f); _prevKb = kb; _prevMouse = ms; return; }
+        if (qJust)   { _questLogOverlay.Open(_player); AudioService.Play(Sfx.OpenMenu, 0.5f); _prevKb = kb; _prevMouse = ms; return; }
+        if (mJust)   { _worldMap.Toggle(); AudioService.Play(Sfx.OpenMenu, 0.5f); _prevKb = kb; _prevMouse = ms; return; }
 
         // ── Dead — only handle respawn input, skip all gameplay ───────────────
         if (_isDead)
@@ -276,7 +479,7 @@ public class WorldScreen : Screen
             _lastClickTime      = gt.TotalGameTime.TotalSeconds;
         }
 
-        // ── Monster AI ────────────────────────────────────────────────────────
+        // ── Monster AI + status ticks ─────────────────────────────────────────
         foreach (var m in _monsters)
         {
             m.Update(dt, _pos, _navMesh, rawDmg =>
@@ -284,11 +487,64 @@ public class WorldScreen : Screen
                 int dmg = Math.Max(1, rawDmg - _player.DefandPhysical());
                 _player.TakeDamage(dmg);
                 ShowInfo($"-{dmg} HP", new Color(200, 80, 60));
+                AudioService.Play(Sfx.Hit, 0.4f, -0.2f);
                 if (_player.CurrentHealth <= 0) TriggerDeath();
             });
+
+            if (m.IsAlive)
+                m.Position = new Vector3(m.Position.X,
+                    TerrainHeights.GetHeight(_heights, _navMesh, m.SpawnFace, m.Position.X, m.Position.Z),
+                    m.Position.Z);
+
+            // Flash timer
+            if (m.HitFlashTimer > 0f) m.HitFlashTimer = Math.Max(0f, m.HitFlashTimer - dt);
+
+            // Stun timer
+            if (m.StunTimer > 0f)     m.StunTimer     = Math.Max(0f, m.StunTimer - dt);
+
+            // Poison DoT
+            if (m.PoisonTimer > 0f && m.IsAlive)
+            {
+                m.PoisonTimer -= dt;
+                m.PoisonTick  -= dt;
+                if (m.PoisonTick <= 0f)
+                {
+                    m.PoisonTick = 1f;
+                    m.Data.TakeDamage(m.PoisonDamage);
+                    ShowInfo($"Poison -{m.PoisonDamage}", new Color(80, 200, 80));
+                    if (!m.IsAlive)
+                    {
+                        _player.GainXp(m.Data.Exp);
+                        OnMonsterKilled(m);
+                        if (m == _target) { _target = null; _autoAttacking = false; }
+                    }
+                }
+            }
         }
         // Clear target only once it is fully gone (not just respawning)
         if (_target is { IsAlive: false, IsRespawning: false }) { _target = null; _autoAttacking = false; }
+
+        // F: talk to nearby NPC or pick up loot
+        if (fJust) TryInteractOrPickup();
+
+        // F5 / F9: save / load
+        if (WasKeyJustPressed(kb, Keys.F5))
+        {
+            SaveService.Save(_player, _pos, _discoveredWpRooms);
+            ShowQuestMsg("Game saved.", new Color(120, 200, 120));
+        }
+        if (WasKeyJustPressed(kb, Keys.F9) && SaveService.HasSave())
+        {
+            var (savedPos, savedWps) = SaveService.Load(_player);
+            if (savedPos != Vector3.Zero)
+            {
+                _pos = savedPos;
+                UpdateFace(_navMesh.FindFaceIndex(new Vector2(_pos.X, _pos.Z)), announce: false);
+                _pos.Y = TerrainHeights.GetHeight(_heights, _navMesh, _currentFace, _pos.X, _pos.Z);
+            }
+            foreach (var r in savedWps) _discoveredWpRooms.Add(r);
+            ShowQuestMsg("Game loaded.", new Color(120, 180, 220));
+        }
 
         // ── Cooldowns & timers ────────────────────────────────────────────────
         foreach (var key in _cooldowns.Keys.ToList())
@@ -296,8 +552,24 @@ public class WorldScreen : Screen
             _cooldowns[key] -= dt;
             if (_cooldowns[key] <= 0f) _cooldowns.Remove(key);
         }
-        if (_roomNameTimer > 0f) _roomNameTimer -= dt;
-        if (_infoMsgTimer  > 0f) _infoMsgTimer  -= dt;
+        if (_roomNameTimer  > 0f) _roomNameTimer  -= dt;
+        if (_infoMsgTimer   > 0f) _infoMsgTimer   -= dt;
+        if (_levelUpTimer   > 0f) _levelUpTimer   -= dt;
+        if (_questMsgTimer  > 0f) _questMsgTimer  -= dt;
+        if (_footstepTimer  > 0f) _footstepTimer  -= dt;
+        _zoneOverlay.Update(dt);
+        _dayNight.Update(dt);
+        _weather.Update(dt, _sw, _sh);
+
+        // Mana regen
+        _manaRegenTimer += dt;
+        if (_manaRegenTimer >= ManaRegenInterval)
+        {
+            _manaRegenTimer -= ManaRegenInterval;
+            if (_player.CurrentMana < _player.MaxMana)
+                _player.RestoreMana(ManaRegenAmount);
+        }
+
         _prevKb = kb;
     }
 
@@ -307,7 +579,8 @@ public class WorldScreen : Screen
     private bool WasKeyJustPressed(KeyboardState current, Keys key)
         => current.IsKeyDown(key) && !_prevKb.IsKeyDown(key);
 
-    private bool IsOverUI(int x, int y) => _skillBarBounds.Contains(x, y);
+    private bool IsOverUI(int x, int y) =>
+        _inventoryOpen || _shopOverlay.IsOpen || _questLogOverlay.IsOpen || _pauseMenu.IsOpen || _skillBarBounds.Contains(x, y);
 
     // ── Movement ──────────────────────────────────────────────────────────────
 
@@ -330,8 +603,16 @@ public class WorldScreen : Screen
             UpdateFace(candidateFace, announce: true);
         }
 
-        _pos = candidate;
-        _yaw = MathF.Atan2(dir.X, dir.Z);
+        _pos   = candidate;
+        _pos.Y = TerrainHeights.GetHeight(_heights, _navMesh, _currentFace, _pos.X, _pos.Z);
+        _yaw   = MathF.Atan2(dir.X, dir.Z);
+
+        if (_footstepTimer <= 0f)
+        {
+            float pitch = _currentTerrain is "dungeon" or "cave" ? -0.3f : 0f;
+            AudioService.Play(Sfx.Footstep, 0.55f, pitch);
+            _footstepTimer = FootstepInterval;
+        }
     }
 
     // ── Room tracking ─────────────────────────────────────────────────────────
@@ -339,6 +620,7 @@ public class WorldScreen : Screen
     private void UpdateFace(int faceIndex, bool announce)
     {
         _currentFace = faceIndex;
+        if (faceIndex >= 0) _visitedFaces.Add(faceIndex);
         var face     = faceIndex >= 0 ? _navMesh.Faces[faceIndex] : null;
 
         _currentRoom = face?.RoomId.HasValue == true
@@ -348,11 +630,39 @@ public class WorldScreen : Screen
             ? WorldDataService.GetRoomName(_currentRoom)
             : face?.RoomName ?? "";
 
+        // Zone / terrain transition
+        string newTerrain = face?.Terrain ?? "grass";
+        if (newTerrain != _currentTerrain)
+        {
+            bool enteringUnderground = newTerrain is "dungeon" or "cave";
+            bool leavingUnderground  = _currentTerrain is "dungeon" or "cave";
+
+            if (announce && (enteringUnderground || leavingUnderground))
+            {
+                string zoneLabel = enteringUnderground
+                    ? $"Entering {_roomName}"
+                    : "Returning to surface";
+                _zoneOverlay.Trigger(WorldDataService.AsciiSafe(zoneLabel));
+                AudioService.Play(Sfx.EnterDungeon, 0.7f);
+            }
+
+            _currentTerrain = newTerrain;
+            AudioService.SetAmbientZone(_currentTerrain);
+        }
+
         if (announce && _roomName.Length > 0)
         {
             _roomNameTimer = RoomNameTime;
             if (_currentRoom?.HasMonsters == true)
                 ShowInfo("Hostile area", new Color(200, 120, 50));
+        }
+
+        // Waypoint discovery — auto-discover when entering a city face for the first time
+        if (announce && face != null && face.RoomId.HasValue)
+        {
+            var wp = _waypoints.FirstOrDefault(w => w.RoomId == face.RoomId.Value);
+            if (wp != null && _discoveredWpRooms.Add(wp.RoomId))
+                ShowQuestMsg($"Waypoint discovered: {wp.Name}", new Color(100, 180, 255));
         }
 
         // Swap monster list to the current face's pool (spawn if first visit)
@@ -369,9 +679,17 @@ public class WorldScreen : Screen
         if (_faceMonsters.TryGetValue(faceIndex, out var existing)) return existing;
 
         var face = _navMesh.Faces[faceIndex];
+
+        // Open plains are safe during the day; monsters only appear at night
+        if (face.Terrain is "grass" or "dirt" && !_dayNight.IsNight)
+            return new();  // not cached — re-checked each time the player enters
         if (face.RoomId.HasValue && WorldDataService.GetRoom(face.RoomId.Value) is { HasMonsters: true } room)
         {
             var spawned = MonsterSpawner.Spawn(_navMesh, faceIndex, room);
+            foreach (var m in spawned)
+                m.Position = new Vector3(m.Position.X,
+                    TerrainHeights.GetHeight(_heights, _navMesh, faceIndex, m.Position.X, m.Position.Z),
+                    m.Position.Z);
             _faceMonsters[faceIndex] = spawned;
             return spawned;
         }
@@ -487,17 +805,24 @@ public class WorldScreen : Screen
     {
         _player.CurrentMana = Math.Max(0, _player.CurrentMana - skill.ManaCost);
         _cooldowns[skill.Id] = GlobalCooldown;
+        AudioService.Play(Sfx.SkillCast, 0.55f);
 
         switch (skill.Target)
         {
             case SkillTarget.SingleEnemy when singleTarget is { IsAlive: true }:
             {
+                if (RollMiss(singleTarget)) { ShowInfo("Miss!", new Color(180, 180, 180)); break; }
                 int dmg = CalcDamage(skill, singleTarget);
                 singleTarget.Data.TakeDamage(dmg);
+                singleTarget.HitFlashTimer = 0.22f;
+                AudioService.Play(Sfx.Hit, 0.75f, skill.Type == SkillType.Magical ? 0.3f : 0f);
                 ShowInfo($"-{dmg}", new Color(220, 80, 80));
+                TryApplyStatus(skill, singleTarget);
                 if (!singleTarget.IsAlive)
                 {
-                    ShowInfo($"Defeated! +{singleTarget.Data.Exp} EXP", Theme.GoldSoft);
+                    AudioService.Play(Sfx.MonsterDeath, 0.65f);
+                    _player.GainXp(singleTarget.Data.Exp);
+                    OnMonsterKilled(singleTarget);
                     _target = null;
                 }
                 break;
@@ -513,12 +838,25 @@ public class WorldScreen : Screen
                         new Vector3(_pos.X, 0f, _pos.Z),
                         new Vector3(m.Position.X, 0f, m.Position.Z));
                     if (d > AoeRadius) continue;
+                    if (RollMiss(m)) continue;
                     int dmg = CalcDamage(skill, m);
                     m.Data.TakeDamage(dmg);
+                    m.HitFlashTimer = 0.22f;
+                    TryApplyStatus(skill, m);
                     total += dmg; hits++;
-                    if (!m.IsAlive && m == _target) _target = null;
+                    if (!m.IsAlive)
+                    {
+                        AudioService.Play(Sfx.MonsterDeath, 0.5f);
+                        _player.GainXp(m.Data.Exp);
+                        OnMonsterKilled(m);
+                        if (m == _target) _target = null;
+                    }
                 }
-                if (hits > 0) ShowInfo($"AoE -{total} ({hits} hit)", new Color(220, 160, 60));
+                if (hits > 0)
+                {
+                    AudioService.Play(Sfx.Hit, 0.8f, 0.1f);
+                    ShowInfo($"AoE -{total} ({hits} hit)", new Color(220, 160, 60));
+                }
                 break;
             }
 
@@ -530,21 +868,221 @@ public class WorldScreen : Screen
                     _player.CurrentHealth = Math.Min(_player.MaxHealth, _player.CurrentHealth + heal);
                     ShowInfo($"+{heal} HP", new Color(80, 200, 80));
                 }
+                AudioService.Play(Sfx.SkillCast, 0.6f);
                 break;
         }
     }
 
+    private const float CritChance     = 0.20f;
+    private const float CritMultiplier = 1.8f;
+
     private void DoAutoAttack(WorldMonster target)
     {
-        int dmg = Math.Max(1, _player.TotalPhysicalAttack - target.Data.DefandPhysical());
+        if (RollMiss(target)) { ShowInfo("Miss!", new Color(180, 180, 180)); return; }
+
+        int atk = _player.TotalPhysicalAttack;
+        int raw = Math.Max(atk / 5, atk - target.Data.DefandPhysical())
+                + _player.Level * 5;
+
+        bool isCrit = Random.Shared.NextSingle() < CritChance;
+        int  dmg    = isCrit ? (int)(raw * CritMultiplier) : raw;
+
         target.Data.TakeDamage(dmg);
-        ShowInfo($"-{dmg}", new Color(220, 120, 80));
+        target.HitFlashTimer = 0.18f;
+        AudioService.Play(Sfx.Hit, isCrit ? 0.85f : 0.65f);
+
+        if (isCrit)
+            ShowInfo($"CRIT! -{dmg}", new Color(255, 215, 50));
+        else
+            ShowInfo($"-{dmg}", new Color(220, 120, 80));
+
+        // Small stun chance on physical hit (10%)
+        if (Random.Shared.NextSingle() < 0.10f && !target.IsStunned)
+        {
+            target.StunTimer = 1.2f;
+            ShowInfo("Stunned!", new Color(140, 140, 220));
+        }
+
         if (!target.IsAlive)
         {
-            ShowInfo($"Defeated! +{target.Data.Exp} EXP", Theme.GoldSoft);
+            _player.GainXp(target.Data.Exp);
+            OnMonsterKilled(target);
             _target        = null;
             _autoAttacking = false;
         }
+    }
+
+    private void OnMonsterKilled(WorldMonster monster)
+    {
+        ShowInfo($"Defeated!  +{monster.Data.Exp} EXP", Theme.GoldSoft);
+
+        var items = LootGenerator.GetLootFor(monster.Data);
+        int gold  = Random.Shared.Next(monster.Data.MinLoot, Math.Max(monster.Data.MinLoot + 1, monster.Data.MaxLoot + 1));
+
+        if (items.Count > 0 || gold > 0)
+            _lootDrops.Add(new WorldLootDrop(monster.Position, items, gold));
+
+        // Update kill progress for active quests
+        int monsterId = monster.Data.Id;
+        foreach (var quest in _player.ActiveQuests)
+        {
+            if (quest.Status != QuestStatus.InProgress) continue;
+            if (!quest.RequiredKills.TryGetValue(monsterId, out int required)) continue;
+
+            quest.KillProgress.TryGetValue(monsterId, out int current);
+            int newCount = current + 1;
+            quest.KillProgress[monsterId] = newCount;
+
+            // Show per-kill progress feedback
+            ShowInfo($"Quest kill: {newCount}/{required} {GetMonsterName(monsterId)}",
+                new Color(220, 185, 60));
+
+            // Check all kill objectives are met
+            bool allDone = quest.RequiredKills.All(kvp =>
+                quest.KillProgress.TryGetValue(kvp.Key, out int got) && got >= kvp.Value);
+            if (allDone && quest.RequiredItems.Count == 0)
+            {
+                quest.Status = QuestStatus.Completed;
+                ShowQuestMsg($"Quest ready to return: {WorldDataService.Localize(quest.Name)}", new Color(220, 185, 60));
+            }
+        }
+    }
+
+    private void DoFastTravel(WorldWaypoint dest)
+    {
+        _pos = dest.Position;
+        UpdateFace(_navMesh.FindFaceIndex(new Vector2(_pos.X, _pos.Z)), announce: true);
+        _pos.Y = TerrainHeights.GetHeight(_heights, _navMesh, _currentFace, _pos.X, _pos.Z);
+        _target        = null;
+        _autoAttacking = false;
+        _monsters      = new List<WorldMonster>();
+        AudioService.Play(Sfx.EnterDungeon, 0.55f);
+    }
+
+    private void TryInteractOrPickup()
+    {
+        // Waypoint shrine — highest priority
+        var wp = _waypoints.FirstOrDefault(w =>
+            _discoveredWpRooms.Contains(w.RoomId) &&
+            Vector3.Distance(new Vector3(_pos.X, 0f, _pos.Z),
+                             new Vector3(w.Position.X, 0f, w.Position.Z)) <= WorldWaypoint.InteractRange);
+        if (wp != null)
+        {
+            var discovered = _waypoints
+                .Where(w => _discoveredWpRooms.Contains(w.RoomId))
+                .ToList();
+            _fastTravel.Open(_currentRoom?.Id ?? -1, discovered, _worldMap);
+            return;
+        }
+
+        // NPC interaction has priority over loot pickup
+        var npc = _worldNpcs.FirstOrDefault(n =>
+            Vector3.Distance(new Vector3(_pos.X, 0f, _pos.Z),
+                             new Vector3(n.Position.X, 0f, n.Position.Z)) <= WorldNpc.InteractRange);
+
+        if (npc != null)
+        {
+            // Shop NPC → open the vendor panel
+            if (npc.Source.Type == NpcType.Shop)
+            {
+                _shopOverlay.Open(npc.Source, _player);
+                return;
+            }
+
+            // Quest return first (player must have a completable quest for this NPC)
+            var returnable = QuestManager.GetReturnableForNpc(_player, npc.Source.Id);
+            if (returnable.Count > 0)
+            {
+                _dialogueOverlay.OpenQuestReturn(npc.Name, returnable[0]);
+                return;
+            }
+
+            // Quest accept (NPC has a quest the player can take)
+            var acceptable = QuestManager.GetAcceptableForNpc(_player, npc.Source.Id);
+            if (acceptable.Count > 0)
+            {
+                _dialogueOverlay.OpenQuestAccept(npc.Name, acceptable[0]);
+                return;
+            }
+
+            // Regular dialogue fallback
+            _dialogueOverlay.Open(npc.Name, npc.DialogueLines);
+            return;
+        }
+
+        TryPickupNearbyLoot();
+    }
+
+    private void AcceptPendingQuest()
+    {
+        var quest = _dialogueOverlay.PendingQuest;
+        if (quest == null) { _dialogueOverlay.Close(); return; }
+
+        var clone  = quest.Clone();
+        clone.Status = QuestStatus.InProgress;
+        clone.GrantAcceptItems(_player);
+        _player.ActiveQuests.Add(clone);
+        _trackedQuest = clone;
+
+        // Talk-only quests auto-complete on accept
+        if (clone.IsTalkOnly)
+            clone.Status = QuestStatus.Completed;
+
+        AudioService.Play(Sfx.QuestAccept, 0.75f);
+        ShowQuestMsg($"Quest accepted: {WorldDataService.Localize(clone.Name)}", new Color(220, 185, 60));
+        _dialogueOverlay.Close();
+    }
+
+    private void CompletePendingQuest()
+    {
+        var quest = _dialogueOverlay.PendingQuest;
+        if (quest == null) { _dialogueOverlay.Close(); return; }
+
+        quest.GrantRewards(_player);
+        quest.Status = QuestStatus.Returned;
+        _player.ActiveQuests.Remove(quest);
+        _player.CompletedQuests.Add(quest);
+
+        if (_trackedQuest == quest) _trackedQuest = _player.ActiveQuests.FirstOrDefault();
+
+        AudioService.Play(Sfx.QuestComplete, 0.8f);
+        ShowQuestMsg($"Quest complete: {WorldDataService.Localize(quest.Name)}", new Color(120, 220, 120));
+        _dialogueOverlay.Close();
+    }
+
+    private void TryPickupNearbyLoot()
+    {
+        bool any = false;
+        for (int i = _lootDrops.Count - 1; i >= 0; i--)
+        {
+            var drop = _lootDrops[i];
+            float dist = Vector3.Distance(
+                new Vector3(_pos.X, 0f, _pos.Z),
+                new Vector3(drop.Position.X, 0f, drop.Position.Z));
+            if (dist > PickupRange) continue;
+
+            if (drop.Gold > 0)
+            {
+                _player.Money.TryAdd(drop.Gold);
+                ShowInfo($"+{drop.Gold} Gold", new Color(220, 185, 60));
+                drop.TakeGold();
+            }
+
+            foreach (var item in drop.Items.ToList())
+            {
+                if (_player.Inventory.AddItem(item, _player))
+                {
+                    AudioService.Play(Sfx.PickUp, 0.6f);
+                    ShowInfo($"+ {item.Name}", new Color(180, 220, 120));
+                    drop.Items.Remove(item);
+                }
+            }
+
+            if (drop.IsEmpty) _lootDrops.RemoveAt(i);
+            any = true;
+        }
+
+        if (!any) ShowInfo("Nothing nearby", Theme.ForegroundDim);
     }
 
     private int CalcDamage(Skill skill, WorldMonster target)
@@ -554,6 +1092,36 @@ public class WorldScreen : Screen
         int defense = skill.Type == SkillType.Physical
             ? target.Data.DefandPhysical() : target.Data.TotalMagicDefense;
         return Math.Max(1, (int)(attack * skill.ScalingFactor) - defense);
+    }
+
+    /// <summary>Returns true if the attack should miss.</summary>
+    private bool RollMiss(WorldMonster target)
+    {
+        // Base 5% + 3% per level above player; max 40%
+        int levelDiff = Math.Max(0, target.Data.Level - _player.Level);
+        // Dex difference reduces miss chance
+        int dexDiff   = Math.Max(0, target.Data.TotalDEX - _player.TotalDEX);
+        float chance  = 0.05f + levelDiff * 0.03f + dexDiff * 0.002f;
+        return Random.Shared.NextSingle() < Math.Min(chance, 0.40f);
+    }
+
+    /// <summary>Applies poison or stun based on skill type and a random roll.</summary>
+    private void TryApplyStatus(Skill skill, WorldMonster target)
+    {
+        if (!target.IsAlive) return;
+
+        if (skill.Type == SkillType.Magical && Random.Shared.NextSingle() < 0.22f && !target.IsPoisoned)
+        {
+            target.PoisonTimer  = 5f;
+            target.PoisonTick   = 1f;
+            target.PoisonDamage = Math.Max(1, _player.TotalMagicAttack / 8);
+            ShowInfo("Poisoned!", new Color(60, 200, 60));
+        }
+        else if (skill.Type == SkillType.Physical && Random.Shared.NextSingle() < 0.12f && !target.IsStunned)
+        {
+            target.StunTimer = 1.8f;
+            ShowInfo("Stunned!", new Color(140, 140, 220));
+        }
     }
 
     // ── Death / respawn ───────────────────────────────────────────────────────
@@ -579,6 +1147,7 @@ public class WorldScreen : Screen
 
         int startFace = _navMesh.FindFaceIndex(new Vector2(RespawnPoint.X, RespawnPoint.Z));
         UpdateFace(startFace, announce: false);
+        _pos.Y = TerrainHeights.GetHeight(_heights, _navMesh, _currentFace, _pos.X, _pos.Z);
 
         // Deaggro all known monsters so they don't instantly re-engage
         foreach (var (_, list) in _faceMonsters)
@@ -592,7 +1161,7 @@ public class WorldScreen : Screen
     public override void Draw(SpriteBatch sb)
     {
         var gd = ScreenManager.Instance.GraphicsDevice;
-        gd.Clear(new Color(85, 115, 145));
+        gd.Clear(_weather.SkyColor);
 
         gd.DepthStencilState = DepthStencilState.Default;
         gd.RasterizerState   = RasterizerState.CullCounterClockwise;
@@ -612,11 +1181,27 @@ public class WorldScreen : Screen
 
         _effect.View       = view;
         _effect.Projection = proj;
+        _weather.ApplyFog(_effect);
 
         // Navmesh floor
         _navRenderer.Draw(gd, _effect);
 
         gd.RasterizerState = RasterizerState.CullCounterClockwise;
+
+        // Static decorations (trees, houses, rocks…) — one combined draw call
+        if (_decoVerts.Length > 0)
+        {
+            gd.RasterizerState = RasterizerState.CullNone;
+            _effect.World      = Matrix.Identity;
+            foreach (var pass in _effect.CurrentTechnique.Passes)
+            {
+                pass.Apply();
+                gd.DrawUserIndexedPrimitives(PrimitiveType.TriangleList,
+                    _decoVerts, 0, _decoVerts.Length,
+                    _decoIdx,   0, _decoIdx.Length / 3);
+            }
+            gd.RasterizerState = RasterizerState.CullCounterClockwise;
+        }
 
         // Monsters
         foreach (var m in _monsters)
@@ -635,6 +1220,19 @@ public class WorldScreen : Screen
                     m.MeshVerts, 0, m.MeshVerts.Length,
                     m.MeshIdx,   0, m.MeshIdx.Length / 3);
             }
+
+            // Status overlay (additive): white flash on hit, dim colour tint for poison/stun
+            float flashAmt  = m.HitFlashTimer > 0f ? Math.Clamp(m.HitFlashTimer / 0.18f, 0f, 1f) : 0f;
+            Color overlayCol = m.HitFlashTimer > 0f ? Color.White
+                             : m.IsPoisoned         ? new Color(30, 130, 30)
+                             : m.IsStunned           ? new Color(60, 60, 160)
+                             : Color.Transparent;
+
+            if (overlayCol != Color.Transparent)
+            {
+                float oa = m.HitFlashTimer > 0f ? flashAmt * 0.85f : 0.30f;
+                DrawMonsterOverlay(gd, m, overlayCol * oa);
+            }
         }
 
         // Character (hidden while dead)
@@ -650,12 +1248,65 @@ public class WorldScreen : Screen
             }
         }
 
+        // Loot drops (flat quads on the floor)
+        foreach (var drop in _lootDrops)
+            DrawLootDrop(gd, drop);
+
+        // Waypoint shrines (geometry baked into decoVerts, but WorldWaypoint also has its own mesh)
+        _effect.World = Matrix.Identity;
+        foreach (var wp in _waypoints)
+        {
+            _effect.World = Matrix.CreateTranslation(wp.Position);
+            foreach (var pass in _effect.CurrentTechnique.Passes)
+            {
+                pass.Apply();
+                gd.DrawUserIndexedPrimitives(PrimitiveType.TriangleList,
+                    wp.MeshVerts, 0, wp.MeshVerts.Length,
+                    wp.MeshIdx,   0, wp.MeshIdx.Length / 3);
+            }
+        }
+        _effect.World = Matrix.Identity;
+
+        // NPCs (static entities — no rotation needed)
+        foreach (var npc in _worldNpcs)
+        {
+            _effect.World = Matrix.CreateTranslation(npc.Position);
+            foreach (var pass in _effect.CurrentTechnique.Passes)
+            {
+                pass.Apply();
+                gd.DrawUserIndexedPrimitives(PrimitiveType.TriangleList,
+                    npc.MeshVerts, 0, npc.MeshVerts.Length,
+                    npc.MeshIdx,   0, npc.MeshIdx.Length / 3);
+            }
+        }
+
         // 2-D HUD
         gd.DepthStencilState = DepthStencilState.None;
         gd.BlendState        = BlendState.AlphaBlend;
         sb.Begin();
+        // Day/night tint over the 3D world, under the HUD
+        Color nightTint = _dayNight.GetOverlayColor();
+        if (nightTint.A > 0)
+            Gfx.Rect(sb, 0, 0, _sw, _sh, nightTint);
+        // Weather overlay (atmospheric darkening + rain drops)
+        _weather.DrawOverlay(sb, _sw, _sh);
         DrawHud(sb);
         if (_isDead) DrawDeathOverlay(sb);
+        if (_inventoryOpen)
+        {
+            var ms2 = Mouse.GetState();
+            _inventoryOverlay.Draw(sb, ms2.X, ms2.Y);
+        }
+        if (_dialogueOverlay.IsOpen)
+            _dialogueOverlay.Draw(sb, _sw, _sh);
+        if (_shopOverlay.IsOpen)
+            _shopOverlay.Draw(sb);
+        if (_questLogOverlay.IsOpen)
+            _questLogOverlay.Draw(sb);
+        _zoneOverlay.Draw(sb, _sw, _sh);
+        _worldMap.Draw(sb, _sw, _sh, _pos, _currentFace, _visitedFaces, _worldNpcs);
+        _fastTravel.Draw(sb, _sw, _sh);
+        _pauseMenu.Draw(sb, _sw, _sh);
         sb.End();
     }
 
@@ -682,12 +1333,54 @@ public class WorldScreen : Screen
         }
     }
 
+    private void DrawMonsterOverlay(GraphicsDevice gd, WorldMonster m, Color col)
+    {
+        // Re-upload mesh with flat overlay colour in additive blend
+        var verts = new VertexPositionColor[m.MeshVerts.Length];
+        for (int i = 0; i < verts.Length; i++)
+            verts[i] = new VertexPositionColor(m.MeshVerts[i].Position, col);
+
+        var prevBlend = gd.BlendState;
+        gd.BlendState = BlendState.Additive;
+        _effect.World = Matrix.CreateRotationY(m.Yaw) * Matrix.CreateTranslation(m.Position);
+        foreach (var pass in _effect.CurrentTechnique.Passes)
+        {
+            pass.Apply();
+            gd.DrawUserIndexedPrimitives(PrimitiveType.TriangleList,
+                verts, 0, verts.Length, m.MeshIdx, 0, m.MeshIdx.Length / 3);
+        }
+        gd.BlendState = prevBlend;
+    }
+
+    private void DrawLootDrop(GraphicsDevice gd, WorldLootDrop drop)
+    {
+        const float hs = 0.28f;
+        const float y  = 0.07f;
+
+        var gold  = new Color(220, 185, 60);
+        var verts = new VertexPositionColor[]
+        {
+            new(new Vector3(drop.Position.X - hs, y, drop.Position.Z - hs), gold),
+            new(new Vector3(drop.Position.X + hs, y, drop.Position.Z - hs), gold),
+            new(new Vector3(drop.Position.X - hs, y, drop.Position.Z + hs), gold),
+            new(new Vector3(drop.Position.X + hs, y, drop.Position.Z + hs), gold),
+        };
+        int[] idx = [0, 1, 2, 1, 3, 2];
+
+        _effect.World = Matrix.Identity;
+        foreach (var pass in _effect.CurrentTechnique.Passes)
+        {
+            pass.Apply();
+            gd.DrawUserIndexedPrimitives(PrimitiveType.TriangleList, verts, 0, 4, idx, 0, 2);
+        }
+    }
+
     // ── HUD ───────────────────────────────────────────────────────────────────
 
     private void DrawHud(SpriteBatch sb)
     {
         // ── Character info (top-left) ────────────────────────────────────────────
-        string info = $"{_player.Name}   Lv. {_player.Level}  {_player.Class}";
+        string info = $"{_player.Name}   Lv. {_player.Level}  {_player.Class}   {_player.Money.Balance.BronzeTotal} Gold";
         Gfx.Rect(sb, 0, 0, (int)Assets.FontNormal.MeasureString(info).X + 28, 40,
             new Color(0, 0, 0, 140));
         Gfx.Text(sb, Assets.FontNormal, info, new Vector2(14, 10), Theme.GoldSoft);
@@ -696,6 +1389,8 @@ public class WorldScreen : Screen
             new Color(80, 180, 80), "HP");
         DrawBar(sb, 14, 64, 180, 10, _player.CurrentMana, _player.MaxMana,
             new Color(60, 120, 210), "MP");
+        DrawBar(sb, 14, 80, 180, 10, (int)_player.Experience, (int)_player.ExpForNextLvl,
+            new Color(180, 140, 30), "XP");
 
         if (_currentRoom?.HasMonsters == true)
         {
@@ -703,15 +1398,31 @@ public class WorldScreen : Screen
             int respawning = _monsters.Count(m => m.IsRespawning);
             string danger  = $"! HOSTILE  {alive} alive  {respawning} respawning";
             var dSz = Assets.FontSmall.MeasureString(danger);
-            Gfx.Rect(sb, 14, 82, (int)dSz.X + 16, 18, new Color(100, 30, 30, 180));
-            Gfx.Text(sb, Assets.FontSmall, danger, new Vector2(22, 84), new Color(220, 100, 80));
+            Gfx.Rect(sb, 14, 96, (int)dSz.X + 16, 18, new Color(100, 30, 30, 180));
+            Gfx.Text(sb, Assets.FontSmall, danger, new Vector2(22, 98), new Color(220, 100, 80));
         }
 
-        // ── Target panel (top-right) ──────────────────────────────────────────
+        // ── Minimap + clock (top-right) ───────────────────────────────────────
+        int mapX = _sw - MinimapRenderer.Size - 14;
+        int mapY = 14;
+        _minimapRenderer.Draw(sb, mapX, mapY, _pos, _worldNpcs);
+
+        string weather  = _weather.DisplayName;
+        string timeStr  = (_dayNight.IsNight ? "[Night] " : "")
+                        + _dayNight.FormatTime()
+                        + (weather.Length > 0 ? $"  {weather}" : "");
+        var    timeSz   = Assets.FontSmall.MeasureString(timeStr);
+        int    timeX    = _sw - (int)timeSz.X - 14;
+        int    timeY    = mapY + MinimapRenderer.Size + 6;
+        Color  timeCol  = _dayNight.IsNight ? new Color(140, 160, 220) : new Color(220, 200, 120);
+        Gfx.Rect(sb, timeX - 6, timeY - 2, (int)timeSz.X + 12, (int)timeSz.Y + 4, new Color(0, 0, 0, 130));
+        Gfx.Text(sb, Assets.FontSmall, timeStr, new Vector2(timeX, timeY), timeCol);
+
+        // ── Target panel (below minimap) ──────────────────────────────────────
         if (_target != null)
         {
             const int panelW = 220, panelH = 58;
-            int px = _sw - panelW - 14, py = 14;
+            int px = _sw - panelW - 14, py = mapY + MinimapRenderer.Size + 8;
             Gfx.Rect(sb, px, py, panelW, panelH, Theme.PanelBg);
             Gfx.Border(sb, new Rectangle(px, py, panelW, panelH),
                 _target.IsAlive ? Theme.Gold * 0.7f : Theme.Gold * 0.3f);
@@ -732,6 +1443,9 @@ public class WorldScreen : Screen
                     new Color(140, 140, 220));
             }
         }
+
+        // ── Active quest tracker (below target panel) ─────────────────────────
+        DrawQuestTracker(sb, mapY + MinimapRenderer.Size + 8 + (_target != null ? 66 : 0));
 
         // ── Room name announcement ────────────────────────────────────────────
         if (_roomNameTimer > 0f && _roomName.Length > 0)
@@ -757,16 +1471,109 @@ public class WorldScreen : Screen
                 new Vector2((_sw - sz.X) / 2f, my), _infoMsgColor * alpha);
         }
 
-        // ── Skill bar (bottom centre) ─────────────────────────────────────────
-        DrawSkillBar(sb);
+        // ── Level-up banner (above room name) ────────────────────────────────
+        if (_levelUpTimer > 0f && _levelUpMsg.Length > 0)
+        {
+            float alpha = MathHelper.Clamp(_levelUpTimer, 0f, 1f);
+            var   sz    = Assets.FontMedium.MeasureString(_levelUpMsg);
+            int   ry    = _sh / 3 - 60;
+            Gfx.Rect(sb, (int)((_sw - sz.X) / 2f) - 36, ry - 12,
+                (int)sz.X + 72, (int)sz.Y + 24, new Color(0, 0, 0, (int)(190 * alpha)));
+            Gfx.Text(sb, Assets.FontMedium, _levelUpMsg,
+                new Vector2((_sw - sz.X) / 2f, ry), new Color(220, 185, 60) * alpha);
+        }
+
+        // ── Nearby interaction prompt (NPC talk or loot pickup) ───────────────
+        if (!_isDead && !_dialogueOverlay.IsOpen)
+        {
+            WorldNpc? nearNpc = _worldNpcs.FirstOrDefault(n =>
+                Vector3.Distance(new Vector3(_pos.X, 0f, _pos.Z),
+                                 new Vector3(n.Position.X, 0f, n.Position.Z)) <= WorldNpc.InteractRange);
+            bool nearLoot = _lootDrops.Any(d => Vector3.Distance(
+                new Vector3(_pos.X, 0f, _pos.Z),
+                new Vector3(d.Position.X, 0f, d.Position.Z)) <= PickupRange);
+
+            string? prompt     = null;
+            Color   promptCol  = Color.White;
+            if (nearNpc != null)   { prompt = $"F  Talk to {nearNpc.Name}"; promptCol = new Color(80, 200, 120); }
+            else if (nearLoot)     { prompt = "F  Pick up";                 promptCol = Theme.GoldSoft; }
+
+            if (prompt != null)
+            {
+                var phSz = Assets.FontNormal.MeasureString(prompt);
+                int phY  = _sh / 2 + 50;
+                Gfx.Rect(sb, (int)((_sw - phSz.X) / 2f) - 14, phY - 4,
+                    (int)phSz.X + 28, (int)phSz.Y + 8, new Color(0, 0, 0, 150));
+                Gfx.Text(sb, Assets.FontNormal, prompt,
+                    new Vector2((_sw - phSz.X) / 2f, phY), promptCol);
+            }
+        }
+
+        // ── Skill bar (bottom centre) — hidden while inventory is open ───────
+        if (!_inventoryOpen) DrawSkillBar(sb);
 
         // ── Control hint (very bottom) ────────────────────────────────────────
-        const string hint = "WASD  Move   Tab  Target   1-9  Skills   RMB  Look   2xClick  Auto-attack";
+        const string hint = "WASD  Move   Tab  Target   1-9  Skills   F  Talk/Pickup   I  Inventory   Q  Quests   F5  Save   F9  Load";
         var hSz = Assets.FontSmall.MeasureString(hint);
         Gfx.Rect(sb, (int)((_sw - hSz.X) / 2f) - 8, _sh - 28, (int)hSz.X + 16, 22,
             new Color(0, 0, 0, 120));
         Gfx.Text(sb, Assets.FontSmall, hint,
             new Vector2((_sw - hSz.X) / 2f, _sh - 24), Theme.ForegroundDim);
+    }
+
+    private void DrawQuestTracker(SpriteBatch sb, int py)
+    {
+        // Pick the first in-progress or just-completed quest if tracked one is gone
+        if (_trackedQuest == null || !_player.ActiveQuests.Contains(_trackedQuest))
+            _trackedQuest = _player.ActiveQuests.FirstOrDefault();
+        if (_trackedQuest == null) return;
+
+        var q = _trackedQuest;
+        const int panelW = 230;
+        int px = _sw - panelW - 14;
+
+        bool ready = q.Status == QuestStatus.Completed;
+
+        // Collect objective lines
+        var lines = new List<(string text, bool done)>();
+        foreach (var (id, req) in q.RequiredKills)
+        {
+            q.KillProgress.TryGetValue(id, out int got);
+            string mobName = GetMonsterName(id);
+            lines.Add(($"  {mobName}: {got}/{req}", got >= req));
+        }
+        foreach (var (itemId, req) in q.RequiredItems)
+            lines.Add(($"  {itemId} (x{req})", false));
+
+        if (lines.Count == 0)
+            lines.Add(("  Return to quest giver", ready));
+
+        if (ready && q.RequiredKills.Count > 0)
+            lines.Add(("  >> Return to quest giver!", true));
+
+        int panelH = 20 + lines.Count * 16 + 8;
+        Gfx.Rect(sb, px, py, panelW, panelH, Theme.PanelBg);
+        Gfx.Border(sb, new Rectangle(px, py, panelW, panelH),
+            ready ? new Color(120, 220, 80) * 0.8f : Theme.Gold * 0.45f);
+
+        // Title
+        string title = WorldDataService.Localize(q.Name);
+        if (title.Length > 25) title = title[..25] + "..";
+        Gfx.Text(sb, Assets.FontSmall, title, new Vector2(px + 8, py + 4),
+            ready ? new Color(120, 220, 80) : Theme.GoldSoft);
+
+        for (int i = 0; i < lines.Count; i++)
+        {
+            Color col = lines[i].done ? new Color(120, 220, 80) : Theme.ForegroundDim;
+            Gfx.Text(sb, Assets.FontSmall, lines[i].text,
+                new Vector2(px + 8, py + 20 + i * 16), col);
+        }
+    }
+
+    private static string GetMonsterName(int monsterId)
+    {
+        var m = MyriaLib.Services.MonsterService.GetMonsterById(monsterId);
+        return m != null ? WorldDataService.Localize(m.Name) : $"#{monsterId}";
     }
 
     private void DrawSkillBar(SpriteBatch sb)
@@ -848,7 +1655,7 @@ public class WorldScreen : Screen
         // Countdown / prompt
         int secs   = Math.Max(0, (int)Math.Ceiling(_deathTimer));
         string sub = secs > 0
-            ? $"Respawning in {secs}s   —   R to respawn now"
+            ? $"Respawning in {secs}s   -   R to respawn now"
             : "Respawning...";
         var subSz = Assets.FontNormal.MeasureString(sub);
         Gfx.Text(sb, Assets.FontNormal, sub,
@@ -872,6 +1679,14 @@ public class WorldScreen : Screen
         _infoMessage  = msg;
         _infoMsgColor = color;
         _infoMsgTimer = InfoMsgTime;
+    }
+
+    private void ShowQuestMsg(string msg, Color color)
+    {
+        string safe    = WorldDataService.AsciiSafe(msg);
+        _questMsg      = safe;
+        _questMsgTimer = QuestMsgTime;
+        ShowInfo(safe, color);
     }
 
     // ── Layout helpers ────────────────────────────────────────────────────────

@@ -2,6 +2,7 @@ using System.Text.Json;
 using MyriaLib.Entities.Maps;
 using MyriaLib.Entities.Characters;
 using MyriaLib.Services;
+using MyriaLib.Services.Manager;
 using MyriaLib.Systems.Enums;
 
 namespace MyriaWorld.Services;
@@ -32,6 +33,7 @@ public static class WorldDataService
     public static void Load()
     {
         GameService.InitializeGame();
+        QuestManager.LoadQuests();
 
         if (File.Exists("Data/locales/en.json"))
         {
@@ -64,7 +66,7 @@ public static class WorldDataService
 
     // Replace typographic characters that fall outside the SpriteFont's
     // character regions (ASCII 32-126 + Latin-1 160-255).
-    private static string AsciiSafe(string s) => s
+    public static string AsciiSafe(string s) => s
         .Replace('—', '-')   // em dash
         .Replace('–', '-')   // en dash
         .Replace('…', '.')   // horizontal ellipsis
@@ -72,6 +74,13 @@ public static class WorldDataService
         .Replace('’', '\'')  // right single quote
         .Replace('“', '"')   // left double quote
         .Replace('”', '"');  // right double quote
+
+    /// <summary>Looks up a locale key and returns the translated string, or the key itself if not found.</summary>
+    public static string Localize(string key)
+    {
+        string raw = _locale.TryGetValue(key, out var s) ? s : key;
+        return AsciiSafe(raw);
+    }
 
     public static bool CanEnter(Character player, Room room)
         => !IsLoaded || RoomService.CanEnterRoom(room, player);

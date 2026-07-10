@@ -33,6 +33,7 @@ public class LoadingScreen : Screen
     {
         if (WorldDataService.IsLoaded)
         {
+            WorldDataService.PrepareCharacter(_player);
             _done = true;
             return;
         }

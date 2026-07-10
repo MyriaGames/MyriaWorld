@@ -13,14 +13,23 @@ public sealed class NavMeshRenderer : IDisposable
     // Face terrain → base colour
     private static readonly Dictionary<string, Color> TerrainColors = new()
     {
-        ["grass"] = new Color(42,  68,  42),
-        ["dirt"]  = new Color(90,  65,  40),
-        ["stone"] = new Color(75,  75,  80),
-        ["sand"]  = new Color(170, 145, 85),
-        ["snow"]  = new Color(200, 210, 220),
-        ["wood"]  = new Color(90,  65,  45),
-        ["water"] = new Color(30,  60, 120),
+        ["grass"]   = new Color(42,  68,  42),
+        ["forest"]  = new Color(28,  52,  28),
+        ["dirt"]    = new Color(90,  65,  40),
+        ["stone"]   = new Color(75,  75,  80),
+        ["sand"]    = new Color(170, 145, 85),
+        ["snow"]    = new Color(200, 210, 220),
+        ["wood"]    = new Color(90,  65,  45),
+        ["water"]   = new Color(30,  60, 120),
+        ["cave"]     = new Color(35,  30,  40),
+        ["dungeon"]  = new Color(25,  18,  30),
+        ["city"]     = new Color(95,  88,  80),
+        ["interior"] = new Color(145, 128, 100),
     };
+
+    /// <summary>Returns the floor colour for the given terrain type string.</summary>
+    public static Color TerrainColor(string terrain)
+        => TerrainColors.GetValueOrDefault(terrain, new Color(50, 50, 50));
 
     // Use CullNone for the floor so winding order in the JSON doesn't matter.
     private static readonly RasterizerState NoCull = new() { CullMode = CullMode.None };
@@ -32,7 +41,7 @@ public sealed class NavMeshRenderer : IDisposable
     // Portal edge lines (CPU array — small enough to not need a VB)
     private VertexPositionColor[] _portalLines = [];
 
-    public void Build(GraphicsDevice gd, NavMesh mesh)
+    public void Build(GraphicsDevice gd, NavMesh mesh, float[] heights)
     {
         var verts = new List<VertexPositionColor>();
         var idx   = new List<int>();
@@ -46,7 +55,7 @@ public sealed class NavMeshRenderer : IDisposable
             foreach (int vi in face.VertexIndices)
             {
                 var xz = mesh.Vertices[vi];
-                verts.Add(new VertexPositionColor(new Vector3(xz.X, 0f, xz.Y), c));
+                verts.Add(new VertexPositionColor(new Vector3(xz.X, heights[vi], xz.Y), c));
             }
             for (int i = 1; i < face.VertexIndices.Length - 1; i++)
             {
@@ -77,8 +86,8 @@ public sealed class NavMeshRenderer : IDisposable
                 if (!seen.Add(key)) continue;
                 var a = mesh.Vertices[va];
                 var b = mesh.Vertices[vb];
-                lines.Add(new VertexPositionColor(new Vector3(a.X, 0.05f, a.Y), portalCol));
-                lines.Add(new VertexPositionColor(new Vector3(b.X, 0.05f, b.Y), portalCol));
+                lines.Add(new VertexPositionColor(new Vector3(a.X, heights[va] + 0.05f, a.Y), portalCol));
+                lines.Add(new VertexPositionColor(new Vector3(b.X, heights[vb] + 0.05f, b.Y), portalCol));
             }
         }
         _portalLines = lines.ToArray();

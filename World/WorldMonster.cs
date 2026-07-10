@@ -29,6 +29,21 @@ public sealed class WorldMonster
     public bool IsRespawning => !IsAlive && _respawnTimer >= 0f;
     public float RespawnTimeRemaining => _respawnTimer;
 
+    // ── Combat VFX & status ───────────────────────────────────────────────────
+    /// <summary>Seconds remaining for white hit-flash overlay. Set externally on damage.</summary>
+    public float HitFlashTimer { get; set; }
+    /// <summary>Seconds of poison remaining.</summary>
+    public float PoisonTimer   { get; set; }
+    /// <summary>Poison DoT tick countdown (1 dmg per second).</summary>
+    public float PoisonTick    { get; set; }
+    /// <summary>Damage dealt per poison tick.</summary>
+    public int   PoisonDamage  { get; set; }
+    /// <summary>Seconds of stun remaining. AI is skipped while > 0.</summary>
+    public float StunTimer     { get; set; }
+
+    public bool IsPoisoned => PoisonTimer > 0f;
+    public bool IsStunned  => StunTimer  > 0f;
+
     // ── Pre-baked local-space mesh ────────────────────────────────────────────
     public VertexPositionColor[] MeshVerts { get; }
     public int[]                 MeshIdx   { get; }
@@ -79,9 +94,15 @@ public sealed class WorldMonster
                 State         = MonsterAiState.Idle;
                 _attackTimer  = AttackInterval;
                 _respawnTimer = -1f;
+                HitFlashTimer = 0f;
+                PoisonTimer   = 0f;
+                StunTimer     = 0f;
             }
             return;
         }
+
+        // Stunned: pause AI, let timer tick in WorldScreen
+        if (StunTimer > 0f) return;
 
         float dist = Vector3.Distance(
             new Vector3(Position.X, 0f, Position.Z),
