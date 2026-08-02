@@ -1,0 +1,825 @@
+[
+  {
+    "Id": "quick_shot",
+    "Name": "Quick Shot",
+    "Description": "A rapid, light ranged attack.",
+    "Class": "Archer",
+    "ManaCost": 6,
+    "Type": "Physical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 1.7,
+    "StatToScaleFrom": "ATK",
+    "MinLevel": 1
+  },
+  {
+    "Id": "venomous_shot",
+    "Name": "Venomous Shot",
+    "Description": "An arrow tipped with poison that deals reduced but lingering damage.",
+    "Class": "Archer",
+    "ManaCost": 10,
+    "Type": "Physical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 1.2,
+    "StatToScaleFrom": "STR",
+    "MinLevel": 1,
+    "AggroModifier": 1.5,
+    "Effects": [
+      { "EffectId": "poison_weak", "ApplyTo": "Target" }
+    ]
+  },
+  {
+    "Id": "volley",
+    "Name": "Volley",
+    "Description": "Fires a spread of arrows at all enemies.",
+    "Class": "Archer",
+    "ManaCost": 18,
+    "Type": "Physical",
+    "Target": "AllEnemies",
+    "ScalingFactor": 1.0,
+    "StatToScaleFrom": "ATK",
+    "MinLevel": 1,
+    "AggroModifier": 1
+  },
+  {
+    "Id": "crippling_shot",
+    "Name": "Crippling Shot",
+    "Description": "A shot aimed at a weak point that cripples the target.",
+    "Class": "Archer",
+    "ManaCost": 12,
+    "Type": "Physical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 1.5,
+    "StatToScaleFrom": "ATK",
+    "MinLevel": 1,
+    "AggroModifier": 1,
+    "Effects": [
+      { "EffectId": "stun_short", "ApplyTo": "Target" }
+    ]
+  },
+  {
+    "Id": "eagle_eye",
+    "Name": "Eagle Eye",
+    "Description": "Focuses the mind to sharpen aim for several turns. Grants no immediate damage.",
+    "Class": "Archer",
+    "ManaCost": 10,
+    "Type": "Physical",
+    "Target": "Self",
+    "ScalingFactor": 2.1,
+    "StatToScaleFrom": "DEX",
+    "MinLevel": 1,
+    "AggroModifier": 0,
+    "Effects": [
+      { "EffectId": "aim_buff_minor", "ApplyTo": "Caster" }
+    ]
+  },
+  {
+    "Id": "swift_strike",
+    "Name": "Swift Strike",
+    "Description": "A quick, precise attack that hits before the enemy can react.",
+    "Class": "Hunter",
+    "ManaCost": 6,
+    "Type": "Physical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 1.8,
+    "StatToScaleFrom": "DEX",
+    "MinLevel": 1
+  },
+  {
+    "Id": "mark_prey",
+    "Name": "Mark Prey",
+    "Description": "Marks the target, exploiting its weak points and lowering its defenses.",
+    "Class": "Hunter",
+    "ManaCost": 8,
+    "Type": "Physical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 1.6,
+    "StatToScaleFrom": "DEX",
+    "MinLevel": 1,
+    "AggroModifier": 1,
+    "Effects": [
+      { "EffectId": "def_debuff_minor", "ApplyTo": "Target" }
+    ]
+  },
+  {
+    "Id": "snare",
+    "Name": "Snare",
+    "Description": "Tangles the enemy with a snare, stunning it briefly.",
+    "Class": "Hunter",
+    "ManaCost": 10,
+    "Type": "Physical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 1.4,
+    "StatToScaleFrom": "DEX",
+    "MinLevel": 1,
+    "AggroModifier": 1,
+    "Effects": [
+      { "EffectId": "stun_short", "ApplyTo": "Target" }
+    ]
+  },
+  {
+    "Id": "feral_slash",
+    "Name": "Feral Slash",
+    "Description": "A savage slash inspired by the fighting style of wild beasts, leaving a toxic wound.",
+    "Class": "Hunter",
+    "ManaCost": 10,
+    "Type": "Physical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 1.7,
+    "StatToScaleFrom": "DEX",
+    "MinLevel": 1,
+    "AggroModifier": 1.5,
+    "Effects": [
+      { "EffectId": "poison_weak", "ApplyTo": "Target" }
+    ]
+  },
+  {
+    "Id": "hunters_focus",
+    "Name": "Hunter's Focus",
+    "Description": "A patient, deliberate strike from careful observation of the prey.",
+    "Class": "Hunter",
+    "ManaCost": 14,
+    "Type": "Physical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 2.0,
+    "StatToScaleFrom": "DEX",
+    "MinLevel": 1
+  },
+  {
+    "Id": "guard_strike",
+    "Name": "Guard Strike",
+    "Description": "A disciplined strike delivered from a defensive stance, reinforcing your guard.",
+    "Class": "Knight",
+    "ManaCost": 8,
+    "Type": "Physical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 1.5,
+    "StatToScaleFrom": "ATK",
+    "MinLevel": 1,
+    "AggroModifier": 0.5,
+    "Effects": [
+      { "EffectId": "def_buff_minor", "ApplyTo": "Caster" }
+    ]
+  },
+  {
+    "Id": "holy_strike",
+    "Name": "Holy Strike",
+    "Description": "A righteous blow empowered by faith.",
+    "Class": "Knight",
+    "ManaCost": 12,
+    "Type": "Physical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 1.8,
+    "AggroModifier": 3,
+    "StatToScaleFrom": "ATK",
+    "MinLevel": 1
+  },
+  {
+    "Id": "shield_wall",
+    "Name": "Shield Wall",
+    "Description": "Channels defensive energy to restore health and fortify your defenses.",
+    "Class": "Knight",
+    "ManaCost": 14,
+    "Type": "Magical",
+    "Target": "Self",
+    "ScalingFactor": 1.0,
+    "StatToScaleFrom": "END",
+    "MinLevel": 1,
+    "IsHealing": true,
+    "AggroModifier": 1.0,
+    "Effects": [
+      { "EffectId": "def_buff_minor", "ApplyTo": "Caster" }
+    ]
+  },
+  {
+    "Id": "challenge",
+    "Name": "Challenge",
+    "Description": "Issues a challenge that draws the enemy's focus while dealing damage.",
+    "Class": "Knight",
+    "ManaCost": 10,
+    "Type": "Physical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 1.6,
+    "StatToScaleFrom": "ATK",
+    "MinLevel": 1,
+    "AggroModifier": 4.0
+  },
+  {
+    "Id": "crusader_strike",
+    "Name": "Crusader Strike",
+    "Description": "A powerful forward strike that uses the full weight of your armor.",
+    "Class": "Knight",
+    "ManaCost": 16,
+    "Type": "Physical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 2.1,
+    "AggroModifier": 2,
+    "StatToScaleFrom": "ATK",
+    "MinLevel": 1
+  },
+  {
+    "Id": "heavy_blow",
+    "Name": "Heavy Blow",
+    "Description": "A powerful melee strike that hits with full force, cracking the target's guard.",
+    "Class": "Fighter",
+    "ManaCost": 8,
+    "Type": "Physical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 1.8,
+    "StatToScaleFrom": "ATK",
+    "MinLevel": 1,
+    "AggroModifier": 1,
+    "Effects": [
+      { "EffectId": "def_debuff_minor", "ApplyTo": "Target" }
+    ]
+  },
+  {
+    "Id": "double_strike",
+    "Name": "Double Strike",
+    "Description": "Two rapid hits on the same target.",
+    "Class": "Fighter",
+    "ManaCost": 12,
+    "Type": "Physical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 1.5,
+    "StatToScaleFrom": "STR",
+    "MinLevel": 1
+  },
+  {
+    "Id": "war_cry",
+    "Name": "War Cry",
+    "Description": "An intimidating battle cry that strikes fear and deals damage, bolstering your own strength.",
+    "Class": "Fighter",
+    "ManaCost": 10,
+    "Type": "Physical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 1.6,
+    "StatToScaleFrom": "STR",
+    "MinLevel": 1,
+    "AggroModifier": 0.5,
+    "Effects": [
+      { "EffectId": "str_buff_minor", "ApplyTo": "Caster" }
+    ]
+  },
+  {
+    "Id": "slam",
+    "Name": "Slam",
+    "Description": "Drives the enemy back with a brutal show of raw force, stunning them briefly.",
+    "Class": "Fighter",
+    "ManaCost": 10,
+    "Type": "Physical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 1.5,
+    "StatToScaleFrom": "STR",
+    "MinLevel": 1,
+    "AggroModifier": 1,
+    "Effects": [
+      { "EffectId": "stun_short", "ApplyTo": "Target" }
+    ]
+  },
+  {
+    "Id": "battle_rush",
+    "Name": "Battle Rush",
+    "Description": "Charges at the enemy with reckless, forward momentum.",
+    "Class": "Fighter",
+    "ManaCost": 14,
+    "Type": "Physical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 2.0,
+    "StatToScaleFrom": "ATK",
+    "MinLevel": 1
+  },
+  {
+    "Id": "berserk_blow",
+    "Name": "Berserk Blow",
+    "Description": "A frenzied strike fueled by pure rage that fuels further aggression.",
+    "Class": "Barbarian",
+    "ManaCost": 8,
+    "Type": "Physical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 1.9,
+    "StatToScaleFrom": "STR",
+    "MinLevel": 1,
+    "AggroModifier": 1,
+    "Effects": [
+      { "EffectId": "str_buff_minor", "ApplyTo": "Caster" }
+    ]
+  },
+  {
+    "Id": "cleave",
+    "Name": "Cleave",
+    "Description": "A wide, sweeping swing that hits all enemies.",
+    "Class": "Barbarian",
+    "ManaCost": 20,
+    "Type": "Physical",
+    "Target": "AllEnemies",
+    "ScalingFactor": 1.1,
+    "StatToScaleFrom": "STR",
+    "MinLevel": 1,
+    "AggroModifier": 1
+  },
+  {
+    "Id": "battle_roar",
+    "Name": "Battle Roar",
+    "Description": "An earth-shaking roar that weakens the enemy's strength while raising your own attack.",
+    "Class": "Barbarian",
+    "ManaCost": 10,
+    "Type": "Physical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 1.5,
+    "StatToScaleFrom": "STR",
+    "MinLevel": 1,
+    "AggroModifier": 1,
+    "Effects": [
+      { "EffectId": "str_debuff_minor", "ApplyTo": "Target" },
+      { "EffectId": "atk_buff_minor", "ApplyTo": "Caster" }
+    ]
+  },
+  {
+    "Id": "reckless_strike",
+    "Name": "Reckless Strike",
+    "Description": "An all-out attack with no regard for your own defense.",
+    "Class": "Barbarian",
+    "ManaCost": 12,
+    "Type": "Physical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 2.1,
+    "StatToScaleFrom": "STR",
+    "MinLevel": 1
+  },
+  {
+    "Id": "primal_fury",
+    "Name": "Primal Fury",
+    "Description": "Channels primal rage into a single devastating blow, greatly increasing your attack.",
+    "Class": "Barbarian",
+    "ManaCost": 15,
+    "Type": "Physical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 2.2,
+    "StatToScaleFrom": "STR",
+    "MinLevel": 1,
+    "AggroModifier": 1.0,
+    "Effects": [
+      { "EffectId": "atk_buff_strong", "ApplyTo": "Caster" }
+    ]
+  },
+  {
+    "Id": "holy_light",
+    "Name": "Holy Light",
+    "Description": "Calls down holy light to smite an enemy, silencing them with its radiance.",
+    "Class": "Cleric",
+    "ManaCost": 10,
+    "Type": "Magical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 1.5,
+    "StatToScaleFrom": "MATK",
+    "MinLevel": 1,
+    "AggroModifier": 1,
+    "Effects": [
+      { "EffectId": "silence_short", "ApplyTo": "Target" }
+    ]
+  },
+  {
+    "Id": "minor_heal",
+    "Name": "Minor Heal",
+    "Description": "Channels divine energy to restore a meaningful amount of health to the caster or a friendly target.",
+    "Class": "Cleric",
+    "ManaCost": 8,
+    "Type": "Magical",
+    "Target": "SingleAlly",
+    "ScalingFactor": 4.8,
+    "StatToScaleFrom": "SPR",
+    "MinLevel": 1,
+    "IsHealing": true,
+    "AggroModifier": 1
+  },
+  {
+    "Id": "divine_protection",
+    "Name": "Divine Protection",
+    "Description": "Invokes divine power to shield a friendly target, bolstering their physical and magic defenses.",
+    "Class": "Cleric",
+    "ManaCost": 12,
+    "Type": "Magical",
+    "Target": "SingleAlly",
+    "ScalingFactor": 1.2,
+    "StatToScaleFrom": "SPR",
+    "MinLevel": 1,
+    "AggroModifier": 1,
+    "Effects": [
+      { "EffectId": "def_buff_minor", "ApplyTo": "Target" },
+      { "EffectId": "mdef_buff_minor", "ApplyTo": "Target" }
+    ]
+  },
+  {
+    "Id": "blessing",
+    "Name": "Blessing",
+    "Description": "Invokes a divine blessing on the caster or a friendly target, empowering their physical and magical attacks.",
+    "Class": "Cleric",
+    "ManaCost": 12,
+    "Type": "Magical",
+    "Target": "SingleAlly",
+    "ScalingFactor": 1.3,
+    "StatToScaleFrom": "SPR",
+    "MinLevel": 1,
+    "AggroModifier": 1.0,
+    "Effects": [
+      { "EffectId": "atk_buff_minor", "ApplyTo": "Target" },
+      { "EffectId": "matk_buff_minor", "ApplyTo": "Target" }
+    ]
+  },
+  {
+    "Id": "smite",
+    "Name": "Smite",
+    "Description": "Calls down divine wrath on a single enemy, shattering their defenses.",
+    "Class": "Cleric",
+    "ManaCost": 14,
+    "Type": "Magical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 1.8,
+    "StatToScaleFrom": "ATK",
+    "MinLevel": 1,
+    "AggroModifier": 1,
+    "Effects": [
+      { "EffectId": "def_debuff_minor", "ApplyTo": "Target" },
+      { "EffectId": "mdef_debuff_minor", "ApplyTo": "Target" }
+    ]
+  },
+  {
+    "Id": "quick_slash",
+    "Name": "Quick Slash",
+    "Description": "A fast slashing strike.",
+    "Class": "Rogue",
+    "ManaCost": 6,
+    "Type": "Physical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 1.5,
+    "StatToScaleFrom": "DEX",
+    "MinLevel": 1
+  },
+  {
+    "Id": "backstab",
+    "Name": "Backstab",
+    "Description": "Strikes from an unexpected angle for high damage, fueling further aggression.",
+    "Class": "Rogue",
+    "ManaCost": 10,
+    "Type": "Physical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 2.0,
+    "StatToScaleFrom": "DEX",
+    "MinLevel": 1,
+    "AggroModifier": 0.5,
+    "Effects": [
+      { "EffectId": "atk_buff_minor", "ApplyTo": "Caster" }
+    ]
+  },
+  {
+    "Id": "poison_dagger",
+    "Name": "Poison Dagger",
+    "Description": "Coats your blade in toxins before delivering a damaging strike.",
+    "Class": "Rogue",
+    "ManaCost": 12,
+    "Type": "Physical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 1.6,
+    "StatToScaleFrom": "DEX",
+    "MinLevel": 1,
+    "AggroModifier": 0.5,
+    "Effects": [
+      { "EffectId": "poison_moderate", "ApplyTo": "Target" }
+    ]
+  },
+  {
+    "Id": "evasive_strike",
+    "Name": "Evasive Strike",
+    "Description": "Attacks while maneuvering out of the enemy's reach, improving your agility.",
+    "Class": "Rogue",
+    "ManaCost": 10,
+    "Type": "Physical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 1.7,
+    "StatToScaleFrom": "DEX",
+    "MinLevel": 1,
+    "AggroModifier": 0.5,
+    "Effects": [
+      { "EffectId": "dex_buff_minor", "ApplyTo": "Caster" }
+    ]
+  },
+  {
+    "Id": "exploit_weakness",
+    "Name": "Exploit Weakness",
+    "Description": "Targets a gap in the enemy's guard, reducing their defense.",
+    "Class": "Rogue",
+    "ManaCost": 14,
+    "Type": "Physical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 1.9,
+    "StatToScaleFrom": "DEX",
+    "MinLevel": 1,
+    "AggroModifier": 0.5,
+    "Effects": [
+      { "EffectId": "def_debuff_minor", "ApplyTo": "Target" }
+    ]
+  },
+  {
+    "Id": "flame_bolt",
+    "Name": "Flame Bolt",
+    "Description": "Hurls a bolt of fire that ignites a burning wound on the target.",
+    "Class": "ElementalMage",
+    "ManaCost": 10,
+    "Type": "Magical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 1.8,
+    "StatToScaleFrom": "MATK",
+    "MinLevel": 1,
+    "AggroModifier": 1,
+    "Effects": [
+      { "EffectId": "poison_weak", "ApplyTo": "Target" }
+    ]
+  },
+  {
+    "Id": "frost_shard",
+    "Name": "Frost Shard",
+    "Description": "Launches a shard of ice that freezes the target in place.",
+    "Class": "ElementalMage",
+    "ManaCost": 10,
+    "Type": "Magical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 1.4,
+    "StatToScaleFrom": "MATK",
+    "MinLevel": 1,
+    "AggroModifier": 1,
+    "Effects": [
+      { "EffectId": "stun_short", "ApplyTo": "Target" }
+    ]
+  },
+  {
+    "Id": "spark",
+    "Name": "Spark",
+    "Description": "Shocks the enemy with a bolt of lightning, disrupting their concentration.",
+    "Class": "ElementalMage",
+    "ManaCost": 8,
+    "Type": "Magical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 1.2,
+    "StatToScaleFrom": "MATK",
+    "MinLevel": 1,
+    "AggroModifier": 1,
+    "Effects": [
+      { "EffectId": "silence_short", "ApplyTo": "Target" }
+    ]
+  },
+  {
+    "Id": "elemental_wave",
+    "Name": "Elemental Wave",
+    "Description": "Releases a wave of mixed elemental energy that strikes all enemies.",
+    "Class": "ElementalMage",
+    "ManaCost": 22,
+    "Type": "Magical",
+    "Target": "AllEnemies",
+    "ScalingFactor": 1.1,
+    "StatToScaleFrom": "MATK",
+    "MinLevel": 1,
+    "AggroModifier": 1
+  },
+  {
+    "Id": "mana_barrier",
+    "Name": "Mana Barrier",
+    "Description": "Converts mana into a protective barrier, restoring health and bolstering defenses.",
+    "Class": "ElementalMage",
+    "ManaCost": 15,
+    "Type": "Magical",
+    "Target": "Self",
+    "ScalingFactor": 1.0,
+    "StatToScaleFrom": "SPR",
+    "MinLevel": 1,
+    "IsHealing": true,
+    "AggroModifier": 1,
+    "Effects": [
+      { "EffectId": "def_buff_minor", "ApplyTo": "Caster" }
+    ]
+  },
+  {
+    "Id": "arcane_bolt",
+    "Name": "Arcane Bolt",
+    "Description": "Fires a bolt of pure arcane energy.",
+    "Class": "ArcanMage",
+    "ManaCost": 10,
+    "Type": "Magical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 2.0,
+    "StatToScaleFrom": "MATK",
+    "MinLevel": 1
+  },
+  {
+    "Id": "mana_drain",
+    "Name": "Mana Drain",
+    "Description": "Drains arcane energy from the target, dealing damage and replenishing your own mana.",
+    "Class": "ArcanMage",
+    "ManaCost": 12,
+    "Type": "Magical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 1.6,
+    "StatToScaleFrom": "MATK",
+    "MinLevel": 1,
+    "AggroModifier": 1,
+    "Effects": [
+      { "EffectId": "mana_regen_small", "ApplyTo": "Caster" }
+    ]
+  },
+  {
+    "Id": "arcane_blast",
+    "Name": "Arcane Blast",
+    "Description": "An explosion of arcane energy that strikes all enemies.",
+    "Class": "ArcanMage",
+    "ManaCost": 24,
+    "Type": "Magical",
+    "Target": "AllEnemies",
+    "ScalingFactor": 1.2,
+    "StatToScaleFrom": "MATK",
+    "MinLevel": 1,
+    "AggroModifier": 1
+  },
+  {
+    "Id": "void_spike",
+    "Name": "Void Spike",
+    "Description": "Conjures a spike of void energy that pierces an enemy's magic resistance.",
+    "Class": "ArcanMage",
+    "ManaCost": 14,
+    "Type": "Magical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 1.9,
+    "StatToScaleFrom": "MATK",
+    "MinLevel": 1,
+    "AggroModifier": 1,
+    "Effects": [
+      { "EffectId": "mdef_debuff_minor", "ApplyTo": "Target" }
+    ]
+  },
+  {
+    "Id": "arcane_surge",
+    "Name": "Arcane Surge",
+    "Description": "Channels raw arcane force into a devastating focused beam.",
+    "Class": "ArcanMage",
+    "ManaCost": 16,
+    "Type": "Magical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 2.2,
+    "StatToScaleFrom": "MATK",
+    "MinLevel": 1
+  },
+  {
+    "Id": "thorn_lash",
+    "Name": "Thorn Lash",
+    "Description": "Whips the enemy with thorned vines, inflicting a venomous wound.",
+    "Class": "Druid",
+    "ManaCost": 8,
+    "Type": "Physical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 1.5,
+    "StatToScaleFrom": "INT",
+    "MinLevel": 1,
+    "AggroModifier": 1,
+    "Effects": [
+      { "EffectId": "poison_weak", "ApplyTo": "Target" }
+    ]
+  },
+  {
+    "Id": "nature_bolt",
+    "Name": "Nature Bolt",
+    "Description": "Fires a bolt of concentrated natural energy.",
+    "Class": "Druid",
+    "ManaCost": 10,
+    "Type": "Magical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 1.6,
+    "StatToScaleFrom": "MATK",
+    "MinLevel": 1
+  },
+  {
+    "Id": "barkskin",
+    "Name": "Barkskin",
+    "Description": "Hardens your skin like bark, restoring health and regenerating vitality.",
+    "Class": "Druid",
+    "ManaCost": 12,
+    "Type": "Magical",
+    "Target": "Self",
+    "ScalingFactor": 5,
+    "StatToScaleFrom": "INT",
+    "MinLevel": 1,
+    "IsHealing": true,
+    "AggroModifier": 1,
+    "Effects": [
+      { "EffectId": "hp_regen_small", "ApplyTo": "Caster" }
+    ]
+  },
+  {
+    "Id": "wind_gust",
+    "Name": "Wind Gust",
+    "Description": "Calls upon the wind to sharpen the reflexes of all allies, increasing their agility.",
+    "Class": "Druid",
+    "ManaCost": 10,
+    "Type": "Magical",
+    "Target": "AllAllies",
+    "ScalingFactor": 1.5,
+    "StatToScaleFrom": "SPR",
+    "MinLevel": 1,
+    "AggroModifier": 0.5,
+    "Effects": [
+      { "EffectId": "dex_buff_minor", "ApplyTo": "Target" }
+    ]
+  },
+  {
+    "Id": "natures_healing",
+    "Name": "Nature's Healing",
+    "Description": "Channels nature's restorative energy to heal a friendly target and grant ongoing regeneration.",
+    "Class": "Druid",
+    "ManaCost": 20,
+    "Type": "Magical",
+    "Target": "SingleAlly",
+    "ScalingFactor": 3.2,
+    "StatToScaleFrom": "INT",
+    "MinLevel": 1,
+    "IsHealing": true,
+    "AggroModifier": 1.0,
+    "Effects": [
+      { "EffectId": "hp_regen_small", "ApplyTo": "Target" }
+    ]
+  },
+  {
+    "Id": "dark_slash",
+    "Name": "Dark Slash",
+    "Description": "A slash infused with dark energy that saps the target's fighting strength.",
+    "Class": "SoulsKnight",
+    "ManaCost": 10,
+    "Type": "Physical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 1.8,
+    "StatToScaleFrom": "ATK",
+    "MinLevel": 1,
+    "AggroModifier": 1.5,
+    "Effects": [
+      { "EffectId": "atk_debuff_minor", "ApplyTo": "Target" }
+    ]
+  },
+  {
+    "Id": "soul_drain",
+    "Name": "Soul Drain",
+    "Description": "Siphons life force from an enemy, healing the caster for the damage dealt.",
+    "Class": "SoulsKnight",
+    "ManaCost": 12,
+    "Type": "Magical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 1.5,
+    "StatToScaleFrom": "INT",
+    "MinLevel": 1,
+    "AggroModifier": 1.0,
+    "Effects": [
+      { "EffectId": "lifesteal_soul", "ApplyTo": "Caster" }
+    ]
+  },
+  {
+    "Id": "dark_shield",
+    "Name": "Dark Shield",
+    "Description": "Surrounds yourself with dark energy, hardening your defenses.",
+    "Class": "SoulsKnight",
+    "ManaCost": 10,
+    "Type": "Magical",
+    "Target": "Self",
+    "ScalingFactor": 1.2,
+    "StatToScaleFrom": "SPR",
+    "MinLevel": 1,
+    "AggroModifier": 1,
+    "Effects": [
+      { "EffectId": "def_buff_minor", "ApplyTo": "Caster" }
+    ]
+  },
+  {
+    "Id": "necrotic_strike",
+    "Name": "Necrotic Strike",
+    "Description": "A strike that corrupts the enemy's vitality, poisoning and weakening their defenses.",
+    "Class": "SoulsKnight",
+    "ManaCost": 12,
+    "Type": "Physical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 1.5,
+    "StatToScaleFrom": "ATK",
+    "MinLevel": 1,
+    "AggroModifier": 1.5,
+    "Effects": [
+      { "EffectId": "poison_moderate", "ApplyTo": "Target" },
+      { "EffectId": "def_debuff_minor", "ApplyTo": "Target" }
+    ]
+  },
+  {
+    "Id": "shadow_veil",
+    "Name": "Shadow Veil",
+    "Description": "Cloaks yourself in shadow to deliver a forceful, unseen strike.",
+    "Class": "SoulsKnight",
+    "ManaCost": 14,
+    "Type": "Magical",
+    "Target": "SingleEnemy",
+    "ScalingFactor": 2.0,
+    "StatToScaleFrom": "INT",
+    "AggroModifier": 5,
+    "MinLevel": 1
+  }
+]

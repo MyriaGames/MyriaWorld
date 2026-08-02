@@ -15,18 +15,30 @@ public static class GameDebug
 
     public static Character CreateDummyCharacter()
     {
-        var stats = new Stats { BaseHealth = 250, BaseMana = 80 };
+        // Myralu race base bonuses + 8 level-ups of Myralu growth (lvl 1→9):
+        //   STR: 4 (race) + 8×1 = 12   END: 6 (race) + 8×2 = 22
+        var stats = new Stats
+        {
+            BaseHealth   = 350,
+            BaseMana     = 100,
+            Strength     = 12,   // race 4 + 8 levels × 1
+            Dexterity    = 9,    // race 1 + 8 levels × 1
+            Endurance    = 22,   // race 6 + 8 levels × 2
+            Intelligence = 20,   // race 4 + 8 levels × 2
+            Spirit       = 19,   // race 3 + 8 levels × 2
+        };
 
-        // SkillFactory.GetSkillsFor is called inside the constructor; if game
-        // services aren't loaded it will return an empty list, which is fine here.
         var p = new Character("Debug", stats)
         {
-            Level = 5,
+            Level = 9,
             Class = CharacterClass.Fighter,
             Race  = CharacterRace.Myralu,
         };
 
-        // Ensure HP/MP start full relative to the debug stats
+        // Fighter class level 4: ExtraSTR+28, ExtraDEX+8, ExtraEND+16
+        // TotalXpToReach(4) = 5000 × 3 × 4 / 2 = 30000
+        p.ClassXp[CharacterClass.Fighter] = 30_000L;
+
         p.CurrentHealth = p.MaxHealth > 0 ? p.MaxHealth : 250;
         p.CurrentMana   = p.MaxMana   > 0 ? p.MaxMana   : 80;
 

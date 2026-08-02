@@ -1,0 +1,290 @@
+[
+  {
+    "Id": "poison_weak",
+    "Name": "Weak Poison",
+    "Description": "A mild toxin dealing small damage each turn.",
+    "Type": "Poison",
+    "Duration": 3,
+    "Magnitude": 5.0,
+    "StatName": ""
+  },
+  {
+    "Id": "poison_moderate",
+    "Name": "Poison",
+    "Description": "A potent toxin dealing moderate damage each turn.",
+    "Type": "Poison",
+    "Duration": 5,
+    "Magnitude": 12.0,
+    "StatName": ""
+  },
+  {
+    "Id": "poison_strong",
+    "Name": "Strong Poison",
+    "Description": "A powerful toxin dealing heavy damage each turn.",
+    "Type": "Poison",
+    "Duration": 7,
+    "Magnitude": 20.0,
+    "StatName": ""
+  },
+  {
+    "Id": "stun_short",
+    "Name": "Stun",
+    "Description": "Stuns the target for one turn.",
+    "Type": "Stun",
+    "Duration": 2,
+    "Magnitude": 0.0,
+    "StatName": ""
+  },
+  {
+    "Id": "silence_short",
+    "Name": "Silence",
+    "Description": "Silences the target for two turns, preventing skill use.",
+    "Type": "Silence",
+    "Duration": 3,
+    "Magnitude": 0.0,
+    "StatName": ""
+  },
+  {
+    "Id": "hp_regen_small",
+    "Name": "Minor Regeneration",
+    "Description": "Restores a small amount of HP each turn.",
+    "Type": "HpRegen",
+    "Duration": 3,
+    "Magnitude": 10.0,
+    "StatName": ""
+  },
+  {
+    "Id": "hp_regen_moderate",
+    "Name": "Regeneration",
+    "Description": "Restores a moderate amount of HP each turn.",
+    "Type": "HpRegen",
+    "Duration": 5,
+    "Magnitude": 25.0,
+    "StatName": ""
+  },
+  {
+    "Id": "hp_regen_sustained",
+    "Name": "Sustained Regeneration",
+    "Description": "Restores a steady amount of HP each turn for an extended duration.",
+    "Type": "HpRegen",
+    "Duration": 10,
+    "Magnitude": 15.0,
+    "StatName": ""
+  },
+  {
+    "Id": "mana_regen_small",
+    "Name": "Minor Mana Flow",
+    "Description": "Restores a small amount of mana each turn.",
+    "Type": "ManaRegen",
+    "Duration": 3,
+    "Magnitude": 5.0,
+    "StatName": ""
+  },
+  {
+    "Id": "str_buff_minor",
+    "Name": "Minor Strength",
+    "Description": "Temporarily increases STR by 10.",
+    "Type": "StatBuff",
+    "Duration": 3,
+    "Magnitude": 10.0,
+    "StatName": "STR"
+  },
+  {
+    "Id": "dex_buff_minor",
+    "Name": "Minor Agility",
+    "Description": "Temporarily increases DEX by 10.",
+    "Type": "StatBuff",
+    "Duration": 3,
+    "Magnitude": 10.0,
+    "StatName": "DEX"
+  },
+  {
+    "Id": "resurrection_weak",
+    "Name": "Last Stand",
+    "Description": "Revives the bearer at 25% HP upon death, if allies survive.",
+    "Type": "Resurrection",
+    "Duration": 5,
+    "Magnitude": 0.25,
+    "StatName": ""
+  },
+  {
+    "Id": "aim_buff_minor",
+    "Name": "Keen Eye",
+    "Description": "Temporarily improves aim significantly.",
+    "Type": "StatBuff",
+    "Duration": 3,
+    "Magnitude": 12.0,
+    "StatName": "AIM"
+  },
+  {
+    "Id": "def_buff_minor",
+    "Name": "Minor Defense",
+    "Description": "Temporarily increases physical defense.",
+    "Type": "StatBuff",
+    "Duration": 3,
+    "Magnitude": 12.0,
+    "StatName": "DEF"
+  },
+  {
+    "Id": "mdef_buff_minor",
+    "Name": "Minor Magic Resist",
+    "Description": "Temporarily increases magic defense.",
+    "Type": "StatBuff",
+    "Duration": 3,
+    "Magnitude": 12.0,
+    "StatName": "MDEF"
+  },
+  {
+    "Id": "def_debuff_minor",
+    "Name": "Weakened Defense",
+    "Description": "Temporarily reduces physical defense.",
+    "Type": "StatBuff",
+    "Duration": 2,
+    "Magnitude": -12.0,
+    "StatName": "DEF"
+  },
+  {
+    "Id": "mdef_debuff_minor",
+    "Name": "Weakened Magic Resist",
+    "Description": "Temporarily reduces magic defense.",
+    "Type": "StatBuff",
+    "Duration": 2,
+    "Magnitude": -12.0,
+    "StatName": "MDEF"
+  },
+  {
+    "Id": "str_debuff_minor",
+    "Name": "Weakened Strength",
+    "Description": "Temporarily reduces STR.",
+    "Type": "StatBuff",
+    "Duration": 3,
+    "Magnitude": -8.0,
+    "StatName": "STR"
+  },
+  {
+    "Id": "atk_buff_minor",
+    "Name": "Minor Attack",
+    "Description": "Temporarily increases physical attack.",
+    "Type": "StatBuff",
+    "Duration": 3,
+    "Magnitude": 10.0,
+    "StatName": "ATK"
+  },
+  {
+    "Id": "atk_buff_strong",
+    "Name": "Battle Frenzy",
+    "Description": "Greatly increases physical attack for a short time.",
+    "Type": "StatBuff",
+    "Duration": 3,
+    "Magnitude": 20.0,
+    "StatName": "ATK"
+  },
+  {
+    "Id": "matk_buff_minor",
+    "Name": "Minor Magic Power",
+    "Description": "Temporarily increases magic attack.",
+    "Type": "StatBuff",
+    "Duration": 3,
+    "Magnitude": 10.0,
+    "StatName": "MATK"
+  },
+  {
+    "Id": "atk_debuff_minor",
+    "Name": "Weakened Attack",
+    "Description": "Temporarily reduces physical attack.",
+    "Type": "StatBuff",
+    "Duration": 3,
+    "Magnitude": -10.0,
+    "StatName": "ATK"
+  },
+  {
+    "Id": "lifesteal_soul",
+    "Name": "Soul Drain",
+    "Description": "Absorbs life force, healing the caster for a fraction of damage dealt.",
+    "Type": "LifeSteal",
+    "Duration": 1,
+    "Magnitude": 0.65,
+    "StatName": ""
+  },
+  {
+    "Id": "def_buff_short",
+    "Name": "Fortified Defense",
+    "Description": "Sharply increases physical defense for one turn.",
+    "Type": "StatBuff",
+    "Duration": 1,
+    "Magnitude": 20.0,
+    "StatName": "DEF"
+  },
+  {
+    "Id": "mdef_buff_short",
+    "Name": "Fortified Magic Resist",
+    "Description": "Sharply increases magic defense for one turn.",
+    "Type": "StatBuff",
+    "Duration": 1,
+    "Magnitude": 20.0,
+    "StatName": "MDEF"
+  },
+  {
+    "Id": "hp_regen_burst",
+    "Name": "Healing Ward",
+    "Description": "A brief surge of healing energy that restores HP once.",
+    "Type": "HpRegen",
+    "Duration": 1,
+    "Magnitude": 12.0,
+    "StatName": ""
+  },
+  {
+    "Id": "eva_buff_minor",
+    "Name": "Minor Evasion",
+    "Description": "Temporarily improves evasion.",
+    "Type": "StatBuff",
+    "Duration": 3,
+    "Magnitude": 12.0,
+    "StatName": "EVA"
+  },
+  {
+    "Id": "poison_spark",
+    "Name": "Electric Burn",
+    "Description": "A brief electric burn that deals minor damage once.",
+    "Type": "Poison",
+    "Duration": 1,
+    "Magnitude": 8.0,
+    "StatName": ""
+  },
+  {
+    "Id": "mana_siphon_arcane",
+    "Name": "Arcane Siphon",
+    "Description": "Converts a portion of damage dealt into mana for the caster.",
+    "Type": "ManaSiphon",
+    "Duration": 1,
+    "Magnitude": 0.5,
+    "StatName": ""
+  },
+  {
+    "Id": "stun_long",
+    "Name": "Prolonged Stun",
+    "Description": "Stuns the target for two turns.",
+    "Type": "Stun",
+    "Duration": 4,
+    "Magnitude": 0.0,
+    "StatName": ""
+  },
+  {
+    "Id": "aim_debuff_minor",
+    "Name": "Blinded",
+    "Description": "Temporarily reduces aim.",
+    "Type": "StatBuff",
+    "Duration": 2,
+    "Magnitude": -12.0,
+    "StatName": "AIM"
+  },
+  {
+    "Id": "silence_burst",
+    "Name": "Brief Silence",
+    "Description": "Silences the target for one turn, preventing skill use.",
+    "Type": "Silence",
+    "Duration": 1,
+    "Magnitude": 0.0,
+    "StatName": ""
+  }
+]

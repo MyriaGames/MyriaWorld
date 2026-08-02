@@ -3,6 +3,7 @@ using MyriaLib.Entities.Maps;
 using MyriaLib.Entities.Characters;
 using MyriaLib.Entities.NPCs;
 using MyriaLib.Services;
+using MyriaLib.Services.Manager;
 using MyriaLib.Systems.Enums;
 
 namespace MyriaWorld.Services;
@@ -33,6 +34,7 @@ public static class WorldDataService
     public static void Load()
     {
         GameService.InitializeGame();
+        QuestManager.LoadQuests();
 
         if (File.Exists("Data/locales/en.json"))
         {
@@ -81,13 +83,12 @@ public static class WorldDataService
         .Replace('“', '"')   // left double quote
         .Replace('”', '"');  // right double quote
 
-    // ── NPC name / description resolution ────────────────────────────────────
-
-    public static string GetNpcName(Npc npc) =>
-        AsciiSafe(_locale.TryGetValue(npc.NameKey, out var s) && s.Length > 0 ? s : npc.Id);
-
-    public static string GetNpcDesc(Npc npc) =>
-        AsciiSafe(_locale.TryGetValue(npc.DescriptionKey, out var s) ? s : "");
+    /// <summary>Looks up a locale key and returns the translated string, or the key itself if not found.</summary>
+    public static string Localize(string key)
+    {
+        string raw = _locale.TryGetValue(key, out var s) ? s : key;
+        return AsciiSafe(raw);
+    }
 
     public static bool CanEnter(Character player, Room room)
         => !IsLoaded || RoomService.CanEnterRoom(room, player);
