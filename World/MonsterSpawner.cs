@@ -1,7 +1,7 @@
 using Microsoft.Xna.Framework;
 using MyriaLib.Entities.Maps;
 
-namespace MyriaWorld.World;
+namespace Myria.Mono.World;
 
 /// <summary>
 /// Creates <see cref="WorldMonster"/> instances for a navmesh face whose room

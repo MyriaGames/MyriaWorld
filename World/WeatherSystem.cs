@@ -1,8 +1,8 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using MyriaWorld.UI;
+using Myria.Mono.UI;
 
-namespace MyriaWorld.World;
+namespace Myria.Mono.World;
 
 public enum WeatherType { Clear, Cloudy, LightRain, HeavyRain, Fog, Storm }
 

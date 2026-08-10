@@ -1,6 +1,6 @@
 using Microsoft.Xna.Framework;
 
-namespace MyriaWorld.World;
+namespace Myria.Mono.World;
 
 /// <summary>
 /// The world navigation mesh.  Vertices are XZ positions (Y=0 plane).

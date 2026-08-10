@@ -4,10 +4,10 @@ using Microsoft.Xna.Framework.Input;
 using MyriaLib.Entities.Characters;
 using MyriaLib.Entities.Items;
 using MyriaLib.Entities.NPCs;
-using MyriaWorld.Screens;
-using MyriaWorld.Services;
+using Myria.Mono.Screens;
+using Myria.Mono.Services;
 
-namespace MyriaWorld.UI;
+namespace Myria.Mono.UI;
 
 public sealed class ShopOverlay
 {

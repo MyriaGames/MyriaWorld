@@ -1,6 +1,6 @@
 using Microsoft.Xna.Framework;
 
-namespace MyriaWorld.World;
+namespace Myria.Mono.World;
 
 /// <summary>
 /// Deterministic per-vertex terrain elevation used for visual hill rendering.

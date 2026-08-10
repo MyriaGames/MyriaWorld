@@ -6,10 +6,10 @@ using MyriaLib.Services;
 using MyriaLib.Services.Manager;
 using MyriaLib.Systems.Enums;
 
-namespace MyriaWorld.Services;
+namespace Myria.Mono.Services;
 
 /// <summary>
-/// Owns the "load all game data" step for MyriaWorld.  Call <see cref="Load"/>
+/// Owns the "load all game data" step for Myria.Mono.  Call <see cref="Load"/>
 /// once on a background thread (see <c>LoadingScreen</c>), then call
 /// <see cref="PrepareCharacter"/> on the main thread to wire skills to the player.
 /// </summary>

@@ -1,7 +1,7 @@
 using Microsoft.Xna.Framework;
 using MyriaLib.Entities.Items;
 
-namespace MyriaWorld.World;
+namespace Myria.Mono.World;
 
 public sealed class WorldLootDrop
 {

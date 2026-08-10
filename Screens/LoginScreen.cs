@@ -1,9 +1,9 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using MyriaWorld.UI;
+using Myria.Mono.UI;
 
-namespace MyriaWorld.Screens;
+namespace Myria.Mono.Screens;
 
 /// <summary>Serves as both the Login and Register screens — same layout, different title/actions.</summary>
 public class LoginScreen : Screen

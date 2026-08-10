@@ -2,7 +2,7 @@ using MyriaLib.Entities;
 using MyriaLib.Entities.Characters;
 using MyriaLib.Systems.Enums;
 
-namespace MyriaWorld;
+namespace Myria.Mono;
 
 /// <summary>Debug-mode helpers — never called in release builds.</summary>
 public static class GameDebug

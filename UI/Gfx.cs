@@ -1,7 +1,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace MyriaWorld.UI;
+namespace Myria.Mono.UI;
 
 public static class Gfx
 {

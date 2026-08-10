@@ -1,8 +1,8 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using MyriaWorld.World;
+using Myria.Mono.World;
 
-namespace MyriaWorld.UI;
+namespace Myria.Mono.UI;
 
 /// <summary>
 /// Full-screen world map opened with M.

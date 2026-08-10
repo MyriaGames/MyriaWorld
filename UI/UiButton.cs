@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
-namespace MyriaWorld.UI;
+namespace Myria.Mono.UI;
 
 public class UiButton
 {

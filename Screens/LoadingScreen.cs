@@ -2,10 +2,10 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using MyriaLib.Entities.Characters;
-using MyriaWorld.Services;
-using MyriaWorld.UI;
+using Myria.Mono.Services;
+using Myria.Mono.UI;
 
-namespace MyriaWorld.Screens;
+namespace Myria.Mono.Screens;
 
 public class LoadingScreen : Screen
 {

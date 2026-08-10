@@ -1,8 +1,8 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using MyriaWorld.UI;
+using Myria.Mono.UI;
 
-namespace MyriaWorld.World;
+namespace Myria.Mono.World;
 
 /// <summary>
 /// Pre-renders the navmesh to a small texture once, then draws it each frame

@@ -1,9 +1,9 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using MyriaWorld.World;
+using Myria.Mono.World;
 
-namespace MyriaWorld.UI;
+namespace Myria.Mono.UI;
 
 public sealed class FastTravelOverlay
 {

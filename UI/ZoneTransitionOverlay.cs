@@ -1,7 +1,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace MyriaWorld.UI;
+namespace Myria.Mono.UI;
 
 /// <summary>
 /// Brief fade-to-black overlay shown when the player crosses a major zone boundary

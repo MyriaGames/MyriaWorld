@@ -1,6 +1,6 @@
 using Microsoft.Xna.Framework;
 
-namespace MyriaWorld.UI;
+namespace Myria.Mono.UI;
 
 public static class Theme
 {

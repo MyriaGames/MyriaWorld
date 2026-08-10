@@ -1,6 +1,6 @@
 using MyriaLib.Systems.Enums;
 
-namespace MyriaWorld.World;
+namespace Myria.Mono.World;
 
 /// <summary>Fixed-position NPC spawn point baked into a navmesh face.</summary>
 public record NpcPlacement(string Id, float X, float Z);

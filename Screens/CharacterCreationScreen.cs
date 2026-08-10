@@ -4,10 +4,10 @@ using Microsoft.Xna.Framework.Input;
 using MyriaLib.Entities;
 using MyriaLib.Entities.Characters;
 using MyriaLib.Systems.Enums;
-using MyriaWorld.Services;
-using MyriaWorld.UI;
+using Myria.Mono.Services;
+using Myria.Mono.UI;
 
-namespace MyriaWorld.Screens;
+namespace Myria.Mono.Screens;
 
 /// <summary>SC1 — Race + class + name picker for a brand-new local character.</summary>
 public class CharacterCreationScreen : Screen

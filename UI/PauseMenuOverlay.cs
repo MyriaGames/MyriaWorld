@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
-namespace MyriaWorld.UI;
+namespace Myria.Mono.UI;
 
 /// <summary>
 /// In-game pause menu shown when pressing ESC from the world.

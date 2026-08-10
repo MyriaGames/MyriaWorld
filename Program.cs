@@ -1,2 +1,2 @@
-﻿using var game = new MyriaWorld.Game1();
+﻿using var game = new Myria.Mono.Game1();
 game.Run();

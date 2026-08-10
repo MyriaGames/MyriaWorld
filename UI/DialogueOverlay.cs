@@ -1,9 +1,9 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MyriaLib.Entities.NPCs;
-using MyriaWorld.Services;
+using Myria.Mono.Services;
 
-namespace MyriaWorld.UI;
+namespace Myria.Mono.UI;
 
 public enum DialogueMode { Regular, QuestAccept, QuestReturn }
 

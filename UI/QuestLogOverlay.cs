@@ -5,9 +5,9 @@ using MyriaLib.Entities.Characters;
 using MyriaLib.Entities.NPCs;
 using MyriaLib.Services;
 using MyriaLib.Systems.Enums;
-using MyriaWorld.Services;
+using Myria.Mono.Services;
 
-namespace MyriaWorld.UI;
+namespace Myria.Mono.UI;
 
 public sealed class QuestLogOverlay
 {
@@ -49,7 +49,7 @@ public sealed class QuestLogOverlay
     {
         if (!IsOpen || _player == null) return;
 
-        var gd = MyriaWorld.Screens.ScreenManager.Instance.GraphicsDevice;
+        var gd = Myria.Mono.Screens.ScreenManager.Instance.GraphicsDevice;
         int sw = gd.Viewport.Width, sh = gd.Viewport.Height;
         int px = (sw - PanelW) / 2;
         int py = (sh - PanelH) / 2;
@@ -81,7 +81,7 @@ public sealed class QuestLogOverlay
     {
         if (!IsOpen || _player == null) return;
 
-        var gd = MyriaWorld.Screens.ScreenManager.Instance.GraphicsDevice;
+        var gd = Myria.Mono.Screens.ScreenManager.Instance.GraphicsDevice;
         int sw = gd.Viewport.Width, sh = gd.Viewport.Height;
 
         // Full-screen dim

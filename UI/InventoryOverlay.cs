@@ -3,9 +3,9 @@ using Microsoft.Xna.Framework.Graphics;
 using MyriaLib.Entities.Characters;
 using MyriaLib.Entities.Items;
 using MyriaLib.Systems.Enums;
-using MyriaWorld.Screens;
+using Myria.Mono.Screens;
 
-namespace MyriaWorld.UI;
+namespace Myria.Mono.UI;
 
 public sealed class InventoryOverlay
 {

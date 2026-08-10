@@ -1,10 +1,10 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using MyriaWorld.Screens;
-using MyriaWorld.Services;
-using MyriaWorld.UI;
+using Myria.Mono.Screens;
+using Myria.Mono.Services;
+using Myria.Mono.UI;
 
-namespace MyriaWorld;
+namespace Myria.Mono;
 
 public class Game1 : Game
 {

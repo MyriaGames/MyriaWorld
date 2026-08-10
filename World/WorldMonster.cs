@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using MyriaLib.Entities.Monsters;
 using MyriaLib.Systems.Enums;
 
-namespace MyriaWorld.World;
+namespace Myria.Mono.World;
 
 public enum MonsterAiState { Idle, Aggroed, Dead }
 

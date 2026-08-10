@@ -1,6 +1,6 @@
 using Microsoft.Xna.Framework;
 
-namespace MyriaWorld.World;
+namespace Myria.Mono.World;
 
 /// <summary>
 /// Manages an in-game day/night cycle.

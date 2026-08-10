@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Microsoft.Xna.Framework;
 
-namespace MyriaWorld.Services;
+namespace Myria.Mono.Services;
 
 public static class SettingsService
 {

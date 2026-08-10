@@ -5,13 +5,13 @@ using MyriaLib.Entities.Items;
 using MyriaLib.Services.Builder;
 using MyriaLib.Services.Manager;
 
-namespace MyriaWorld.Services;
+namespace Myria.Mono.Services;
 
 public static class SaveService
 {
     private static readonly string SavePath =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                     "MyriaWorld", "save.json");
+                     "Myria.Mono", "save.json");
 
     private static readonly JsonSerializerOptions Opts = new() { WriteIndented = true };
 

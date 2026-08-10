@@ -1,4 +1,4 @@
-namespace MyriaWorld.Services;
+namespace Myria.Mono.Services;
 
 public class AppSettings
 {

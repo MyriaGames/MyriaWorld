@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using MyriaLib.Entities.Maps;
 using MyriaLib.Systems.Enums;
 
-namespace MyriaWorld.World;
+namespace Myria.Mono.World;
 
 /// <summary>
 /// A static gathering node in the 3D world (ore vein, tree, herb patch).

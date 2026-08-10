@@ -4,7 +4,7 @@ using MyriaLib.Models;
 using MyriaLib.Services;
 using MyriaLib.Systems;
 
-namespace MyriaWorld.Services;
+namespace Myria.Mono.Services;
 
 /// <summary>
 /// Manages local single-player character saves under Data/saves/local-{name}.json.

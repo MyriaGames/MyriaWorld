@@ -1,10 +1,10 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using MyriaWorld.Services;
-using MyriaWorld.UI;
+using Myria.Mono.Services;
+using Myria.Mono.UI;
 
-namespace MyriaWorld.Screens;
+namespace Myria.Mono.Screens;
 
 /// <summary>SC3 — Display settings with persist + apply.</summary>
 public class SettingsScreen : Screen

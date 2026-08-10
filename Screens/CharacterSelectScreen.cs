@@ -1,10 +1,10 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using MyriaWorld.Services;
-using MyriaWorld.UI;
+using Myria.Mono.Services;
+using Myria.Mono.UI;
 
-namespace MyriaWorld.Screens;
+namespace Myria.Mono.Screens;
 
 /// <summary>SC2 — Local character list; pick a character or create a new one.</summary>
 public class CharacterSelectScreen : Screen

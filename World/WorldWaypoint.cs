@@ -1,7 +1,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace MyriaWorld.World;
+namespace Myria.Mono.World;
 
 public sealed class WorldWaypoint
 {

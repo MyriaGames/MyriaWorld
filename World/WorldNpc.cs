@@ -2,9 +2,9 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MyriaLib.Entities.NPCs;
 using MyriaLib.Systems.Enums;
-using MyriaWorld.Services;
+using Myria.Mono.Services;
 
-namespace MyriaWorld.World;
+namespace Myria.Mono.World;
 
 /// <summary>
 /// A static NPC entity in the 3D world. Holds a pre-baked mesh and its

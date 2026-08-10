@@ -1,4 +1,4 @@
-namespace MyriaWorld.World;
+namespace Myria.Mono.World;
 
 /// <summary>
 /// Links a world building (placed by WorldDecorationSpawner) to the NPC that lives inside it.

@@ -11,12 +11,12 @@ using MyriaLib.Services.Manager;
 using MyriaLib.Systems;
 using MyriaLib.Systems.Enums;
 using MyriaLib.Systems.Events;
-using MyriaWorld.Services;
-using MyriaWorld.UI;
-using MyriaWorld.World;
-using Sfx = MyriaWorld.Services.AudioService.Sfx;
+using Myria.Mono.Services;
+using Myria.Mono.UI;
+using Myria.Mono.World;
+using Sfx = Myria.Mono.Services.AudioService.Sfx;
 
-namespace MyriaWorld.Screens;
+namespace Myria.Mono.Screens;
 
 public class WorldScreen : Screen
 {
@@ -2414,7 +2414,7 @@ public class WorldScreen : Screen
     private void QuickSave()
     {
         _player.CurrentRoomId = _currentRoom?.Id ?? _player.CurrentRoomId;
-        MyriaWorld.Services.LocalSaveService.Save(_player);
+        Myria.Mono.Services.LocalSaveService.Save(_player);
         _savedFlashTimer = SavedFlashTime;
         _showPause       = false;
     }

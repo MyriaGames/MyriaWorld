@@ -1,6 +1,6 @@
 using Microsoft.Xna.Framework.Audio;
 
-namespace MyriaWorld.Services;
+namespace Myria.Mono.Services;
 
 /// <summary>
 /// Generates all game sounds procedurally from PCM data (no external audio files required).

@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace MyriaWorld.UI;
+namespace Myria.Mono.UI;
 
 public static class Assets
 {

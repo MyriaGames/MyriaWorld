@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Microsoft.Xna.Framework;
 
-namespace MyriaWorld.World;
+namespace Myria.Mono.World;
 
 public static class NavMeshLoader
 {
