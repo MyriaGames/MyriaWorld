@@ -1,7 +1,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using MyriaLib.Entities.Characters;
+using Myria.Lib.Core.Entities.Characters;
 using Myria.Mono.Services;
 using Myria.Mono.UI;
 

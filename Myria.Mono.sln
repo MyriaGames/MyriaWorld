@@ -4,7 +4,7 @@ VisualStudioVersion = 18.7.11903.348 stable
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Myria.Mono", "Myria.Mono.csproj", "{F169627B-154F-4C5C-9C09-EA4E50E43AB1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyriaLib", "..\MyriaLib\MyriaLib.csproj", "{56C2A681-882A-C79E-3EF6-2A4E18AFECED}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Myria.Lib.Core", "..\Myria.Lib\Myria.Lib.Core\Myria.Lib.Core.csproj", "{56C2A681-882A-C79E-3EF6-2A4E18AFECED}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -1,7 +1,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using MyriaLib.Entities.NPCs;
-using MyriaLib.Systems.Enums;
+using Myria.Lib.Core.Entities.NPCs;
+using Myria.Lib.Core.Systems.Enums;
 using Myria.Mono.Services;
 
 namespace Myria.Mono.World;
@@ -17,7 +17,7 @@ public sealed class WorldNpc
     public string[]              DialogueLines { get; }
     public VertexPositionColor[] MeshVerts     { get; }
     public int[]                 MeshIdx       { get; }
-    /// <summary>Underlying MyriaLib NPC, used for quest and shop lookups.</summary>
+    /// <summary>Underlying Myria.Lib.Core NPC, used for quest and shop lookups.</summary>
     public Npc                   Source        { get; }
 
     public const float InteractRange = 2.5f;

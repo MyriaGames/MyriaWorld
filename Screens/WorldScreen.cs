@@ -1,16 +1,16 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using MyriaLib.Entities.Maps;
-using MyriaLib.Entities.Characters;
-using MyriaLib.Entities.NPCs;
-using MyriaLib.Entities.Skills;
-using MyriaLib.Entities.Items;
-using MyriaLib.Services;
-using MyriaLib.Services.Manager;
-using MyriaLib.Systems;
-using MyriaLib.Systems.Enums;
-using MyriaLib.Systems.Events;
+using Myria.Lib.Core.Entities.Maps;
+using Myria.Lib.Core.Entities.Characters;
+using Myria.Lib.Core.Entities.NPCs;
+using Myria.Lib.Core.Entities.Skills;
+using Myria.Lib.Core.Entities.Items;
+using Myria.Lib.Core.Services;
+using Myria.Lib.Core.Services.Manager;
+using Myria.Lib.Core.Systems;
+using Myria.Lib.Core.Systems.Enums;
+using Myria.Lib.Core.Systems.Events;
 using Myria.Mono.Services;
 using Myria.Mono.UI;
 using Myria.Mono.World;
@@ -981,7 +981,7 @@ public class WorldScreen : Screen
 
         // GM6: Quest kill tracking
         foreach (var quest in _player.ActiveQuests.Where(q =>
-            q.Status == MyriaLib.Systems.Enums.QuestStatus.InProgress &&
+            q.Status == Myria.Lib.Core.Systems.Enums.QuestStatus.InProgress &&
             q.RequiredKills.ContainsKey(m.Data.Id)))
         {
             quest.KillProgress.TryGetValue(m.Data.Id, out int cur);
@@ -993,7 +993,7 @@ public class WorldScreen : Screen
                 quest.ItemProgress.TryGetValue(kv.Key, out int i) && i >= kv.Value);
             if (killsDone && itemsDone)
             {
-                quest.Status = MyriaLib.Systems.Enums.QuestStatus.Completed;
+                quest.Status = Myria.Lib.Core.Systems.Enums.QuestStatus.Completed;
                 AddFloatText($"Quest complete: {quest.Name}", Theme.GoldSoft);
             }
         }
@@ -1584,7 +1584,7 @@ public class WorldScreen : Screen
 
     private static string GetMonsterName(int monsterId)
     {
-        var m = MyriaLib.Services.MonsterService.GetMonsterById(monsterId);
+        var m = Myria.Lib.Core.Services.MonsterService.GetMonsterById(monsterId);
         return m != null ? WorldDataService.Localize(m.Name) : $"#{monsterId}";
     }
 
@@ -2727,15 +2727,15 @@ public class WorldScreen : Screen
             new Vector2(px + panelW - cSz.X - 16, fy + 4), Theme.ForegroundDim);
     }
 
-    private static Color RarityColor(MyriaLib.Systems.Enums.ItemRarity rarity) => rarity switch
+    private static Color RarityColor(Myria.Lib.Core.Systems.Enums.ItemRarity rarity) => rarity switch
     {
-        MyriaLib.Systems.Enums.ItemRarity.Common    => new Color(180, 180, 180),
-        MyriaLib.Systems.Enums.ItemRarity.Uncommon  => new Color(60,  180, 70),
-        MyriaLib.Systems.Enums.ItemRarity.Rare      => new Color(60,  120, 210),
-        MyriaLib.Systems.Enums.ItemRarity.Epic      => new Color(155, 60,  210),
-        MyriaLib.Systems.Enums.ItemRarity.Unique    => new Color(210, 130, 40),
-        MyriaLib.Systems.Enums.ItemRarity.Legendary => new Color(210, 155, 30),
-        MyriaLib.Systems.Enums.ItemRarity.Godly     => new Color(210, 210, 70),
+        Myria.Lib.Core.Systems.Enums.ItemRarity.Common    => new Color(180, 180, 180),
+        Myria.Lib.Core.Systems.Enums.ItemRarity.Uncommon  => new Color(60,  180, 70),
+        Myria.Lib.Core.Systems.Enums.ItemRarity.Rare      => new Color(60,  120, 210),
+        Myria.Lib.Core.Systems.Enums.ItemRarity.Epic      => new Color(155, 60,  210),
+        Myria.Lib.Core.Systems.Enums.ItemRarity.Unique    => new Color(210, 130, 40),
+        Myria.Lib.Core.Systems.Enums.ItemRarity.Legendary => new Color(210, 155, 30),
+        Myria.Lib.Core.Systems.Enums.ItemRarity.Godly     => new Color(210, 210, 70),
         _                                           => Color.White,
     };
 

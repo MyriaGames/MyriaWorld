@@ -35,7 +35,7 @@ public static class NavMeshLoader
             NpcPlacements = f.Npcs?.Select(n => new NpcPlacement(n.Id, n.X, n.Z)).ToArray()
                             ?? [],
             GatherNodes   = f.GatherNodes?.Select(g => new GatherNodePlacement(
-                                Enum.Parse<MyriaLib.Systems.Enums.GatheringType>(g.Type, ignoreCase: true),
+                                Enum.Parse<Myria.Lib.Core.Systems.Enums.GatheringType>(g.Type, ignoreCase: true),
                                 g.Label, g.X, g.Z)).ToArray()
                             ?? [],
         }).ToArray();

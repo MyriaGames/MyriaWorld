@@ -1,7 +1,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using MyriaLib.Entities.Maps;
-using MyriaLib.Systems.Enums;
+using Myria.Lib.Core.Entities.Maps;
+using Myria.Lib.Core.Systems.Enums;
 
 namespace Myria.Mono.World;
 

@@ -1,8 +1,8 @@
 using System.Text.Json;
-using MyriaLib.Entities.Characters;
-using MyriaLib.Models;
-using MyriaLib.Services;
-using MyriaLib.Systems;
+using Myria.Lib.Core.Entities.Characters;
+using Myria.Lib.Core.Models;
+using Myria.Lib.Core.Services;
+using Myria.Lib.Core.Systems;
 
 namespace Myria.Mono.Services;
 

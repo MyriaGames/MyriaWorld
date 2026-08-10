@@ -1,14 +1,14 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using MyriaLib.Entities.Monsters;
-using MyriaLib.Systems.Enums;
+using Myria.Lib.Core.Entities.Monsters;
+using Myria.Lib.Core.Systems.Enums;
 
 namespace Myria.Mono.World;
 
 public enum MonsterAiState { Idle, Aggroed, Dead }
 
 /// <summary>
-/// A live monster entity in the 3D world.  Wraps a cloned MyriaLib Monster so the
+/// A live monster entity in the 3D world.  Wraps a cloned Myria.Lib.Core Monster so the
 /// shared template is never mutated.  Handles its own simple AI and pre-bakes its
 /// local-space mesh so Draw needs only a matrix swap per monster.
 /// </summary>

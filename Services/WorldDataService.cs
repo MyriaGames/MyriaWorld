@@ -1,10 +1,10 @@
 using System.Text.Json;
-using MyriaLib.Entities.Maps;
-using MyriaLib.Entities.Characters;
-using MyriaLib.Entities.NPCs;
-using MyriaLib.Services;
-using MyriaLib.Services.Manager;
-using MyriaLib.Systems.Enums;
+using Myria.Lib.Core.Entities.Maps;
+using Myria.Lib.Core.Entities.Characters;
+using Myria.Lib.Core.Entities.NPCs;
+using Myria.Lib.Core.Services;
+using Myria.Lib.Core.Services.Manager;
+using Myria.Lib.Core.Systems.Enums;
 
 namespace Myria.Mono.Services;
 
@@ -52,7 +52,7 @@ public static class WorldDataService
     /// entering <c>WorldScreen</c>.
     /// </summary>
     public static void PrepareCharacter(Character player)
-        => MyriaLib.Services.Builder.SkillFactory.UpdateSkills(player);
+        => Myria.Lib.Core.Services.Builder.SkillFactory.UpdateSkills(player);
 
     // ── Room queries ──────────────────────────────────────────────────────────
 
@@ -65,7 +65,7 @@ public static class WorldDataService
         return AsciiSafe(raw);
     }
 
-    public static string GetItemName(MyriaLib.Entities.Items.Item item)
+    public static string GetItemName(Myria.Lib.Core.Entities.Items.Item item)
     {
         if (_locale.TryGetValue(item.Name, out var s) && s.Length > 0) return AsciiSafe(s);
         string raw = item.Name.StartsWith("item.") ? item.Name[5..] : item.Name;

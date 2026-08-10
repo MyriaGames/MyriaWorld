@@ -1,9 +1,9 @@
 using System.Text.Json;
 using Microsoft.Xna.Framework;
-using MyriaLib.Entities.Characters;
-using MyriaLib.Entities.Items;
-using MyriaLib.Services.Builder;
-using MyriaLib.Services.Manager;
+using Myria.Lib.Core.Entities.Characters;
+using Myria.Lib.Core.Entities.Items;
+using Myria.Lib.Core.Services.Builder;
+using Myria.Lib.Core.Services.Manager;
 
 namespace Myria.Mono.Services;
 
@@ -100,12 +100,12 @@ public static class SaveService
         foreach (var id in data.ActiveQuestIds)
         {
             var q = QuestManager.GetQuestById(id)?.Clone();
-            if (q != null) { q.Status = MyriaLib.Systems.Enums.QuestStatus.InProgress; player.ActiveQuests.Add(q); }
+            if (q != null) { q.Status = Myria.Lib.Core.Systems.Enums.QuestStatus.InProgress; player.ActiveQuests.Add(q); }
         }
         foreach (var id in data.CompletedQuestIds)
         {
             var q = QuestManager.GetQuestById(id)?.Clone();
-            if (q != null) { q.Status = MyriaLib.Systems.Enums.QuestStatus.Returned; player.CompletedQuests.Add(q); }
+            if (q != null) { q.Status = Myria.Lib.Core.Systems.Enums.QuestStatus.Returned; player.CompletedQuests.Add(q); }
         }
 
         return (new Vector3(data.PosX, data.PosY, data.PosZ),

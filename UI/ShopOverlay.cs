@@ -1,9 +1,9 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using MyriaLib.Entities.Characters;
-using MyriaLib.Entities.Items;
-using MyriaLib.Entities.NPCs;
+using Myria.Lib.Core.Entities.Characters;
+using Myria.Lib.Core.Entities.Items;
+using Myria.Lib.Core.Entities.NPCs;
 using Myria.Mono.Screens;
 using Myria.Mono.Services;
 
@@ -149,12 +149,12 @@ public sealed class ShopOverlay
             Theme.ForegroundDim);
     }
 
-    private static Color RarityColor(MyriaLib.Systems.Enums.ItemRarity r) => r switch
+    private static Color RarityColor(Myria.Lib.Core.Systems.Enums.ItemRarity r) => r switch
     {
-        MyriaLib.Systems.Enums.ItemRarity.Uncommon  => new Color(30,  200, 80),
-        MyriaLib.Systems.Enums.ItemRarity.Rare      => new Color(60,  120, 220),
-        MyriaLib.Systems.Enums.ItemRarity.Epic      => new Color(160, 60,  220),
-        MyriaLib.Systems.Enums.ItemRarity.Legendary => new Color(220, 140, 30),
+        Myria.Lib.Core.Systems.Enums.ItemRarity.Uncommon  => new Color(30,  200, 80),
+        Myria.Lib.Core.Systems.Enums.ItemRarity.Rare      => new Color(60,  120, 220),
+        Myria.Lib.Core.Systems.Enums.ItemRarity.Epic      => new Color(160, 60,  220),
+        Myria.Lib.Core.Systems.Enums.ItemRarity.Legendary => new Color(220, 140, 30),
         _                                            => Theme.Foreground,
     };
 }

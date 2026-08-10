@@ -1,6 +1,6 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using MyriaLib.Entities.NPCs;
+using Myria.Lib.Core.Entities.NPCs;
 using Myria.Mono.Services;
 
 namespace Myria.Mono.UI;

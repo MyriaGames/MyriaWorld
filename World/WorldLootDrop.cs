@@ -1,5 +1,5 @@
 using Microsoft.Xna.Framework;
-using MyriaLib.Entities.Items;
+using Myria.Lib.Core.Entities.Items;
 
 namespace Myria.Mono.World;
 

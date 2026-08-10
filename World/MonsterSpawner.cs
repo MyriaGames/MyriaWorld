@@ -1,5 +1,5 @@
 using Microsoft.Xna.Framework;
-using MyriaLib.Entities.Maps;
+using Myria.Lib.Core.Entities.Maps;
 
 namespace Myria.Mono.World;
 
@@ -39,7 +39,7 @@ public static class MonsterSpawner
     /// Weighted-random selection from the room's encounter table.
     /// Returns null if the room has no monster templates wired in.
     /// </summary>
-    private static MyriaLib.Entities.Monsters.Monster? PickTemplate(Room room)
+    private static Myria.Lib.Core.Entities.Monsters.Monster? PickTemplate(Room room)
     {
         if (room.Monsters.Count == 0) return null;
 

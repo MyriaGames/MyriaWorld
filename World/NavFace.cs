@@ -1,4 +1,4 @@
-using MyriaLib.Systems.Enums;
+using Myria.Lib.Core.Systems.Enums;
 
 namespace Myria.Mono.World;
 
