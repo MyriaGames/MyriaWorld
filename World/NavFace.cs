@@ -6,7 +6,7 @@ namespace Myria.Mono.World;
 public record NpcPlacement(string Id, float X, float Z);
 
 /// <summary>Fixed-position gathering node baked into a navmesh face.</summary>
-public record GatherNodePlacement(GatheringType Type, string Label, float X, float Z);
+public record GatherNodePlacement(string Type, string Label, float X, float Z);
 
 /// <summary>
 /// One polygon face of the navigation mesh.  Vertices are stored as indices

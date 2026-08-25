@@ -45,7 +45,7 @@ public sealed class WorldMonster
     public bool IsStunned  => StunTimer  > 0f;
 
     // ── Pre-baked local-space mesh ────────────────────────────────────────────
-    public VertexPositionColor[] MeshVerts { get; }
+    public VertexPositionColorTexture[] MeshVerts { get; }
     public int[]                 MeshIdx   { get; }
 
     // ── AI tuning ─────────────────────────────────────────────────────────────
@@ -149,10 +149,10 @@ public sealed class WorldMonster
 
     // ── Mesh building ─────────────────────────────────────────────────────────
 
-    private static (VertexPositionColor[], int[]) BuildMesh(MonsterType type)
+    private static (VertexPositionColorTexture[], int[]) BuildMesh(MonsterType type)
     {
         var (bright, dark) = ColorsFor(type);
-        var verts = new List<VertexPositionColor>();
+        var verts = new List<VertexPositionColorTexture>();
         var idx   = new List<int>();
 
         // Body

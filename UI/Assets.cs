@@ -18,6 +18,7 @@ public static class Assets
         FontNormal = content.Load<SpriteFont>("Fonts/FontNormal");
         FontMedium = content.Load<SpriteFont>("Fonts/FontMedium");
         Dot = CreateCircle(gd, 14);
+        Myria.Mono.World.ProceduralTextures.Load(gd);
     }
 
     // ── Text safety ───────────────────────────────────────────────────────────

@@ -27,12 +27,14 @@ public class WorldScreen : Screen
 
     // Navigation mesh + world decorations
     private NavMesh          _navMesh      = null!;
-    private NavMeshRenderer  _navRenderer  = null!;
-    private WorldDecorations _decorations  = null!;
+    private NavMeshRenderer   _navRenderer  = null!;
+    private WorldDecorations  _decorations  = null!;
+    private WorldPaths        _paths        = null!;
+    private MonsterSpawnZones _spawnZones   = null!;
 
     // Character mesh
-    private VertexPositionColor[] _playerVerts = null!;
-    private int[]                 _playerIdx   = null!;
+    private VertexPositionColorTexture[] _playerVerts = null!;
+    private int[]                        _playerIdx   = null!;
 
     // ── Room tracking ─────────────────────────────────────────────────────────
     private int    _currentFace = -1;
@@ -66,6 +68,13 @@ public class WorldScreen : Screen
     private int      _classScroll   = 0;
     private int      _classIdx      = -1;
     private string[] _classChoices  = [];
+    private int      _craftScroll   = 0;
+    private int      _craftIdx      = -1;
+    private int      _craftQty      = 1;
+    private CraftingRecipe[] _craftRecipes = [];
+    private int      _upgradeScroll = 0;
+    private int      _upgradeIdx    = -1;
+    private EquipmentItem[] _upgradeItems = [];
 
     // ── Combat / skills ───────────────────────────────────────────────────────
     private Skill?  _pendingSkill;     // skill queued while auto-moving toward target
@@ -106,8 +115,8 @@ public class WorldScreen : Screen
     private readonly HashSet<int>     _visitedFaces      = new();
 
     // ── Static world decorations ──────────────────────────────────────────────
-    private VertexPositionColor[] _decoVerts = [];
-    private int[]                 _decoIdx   = [];
+    private VertexPositionColorTexture[] _decoVerts = [];
+    private int[]                        _decoIdx   = [];
 
     // ── Buildings (NPC placement) ─────────────────────────────────────────────
     private IReadOnlyList<WorldBuilding> _buildings = [];
@@ -219,12 +228,16 @@ public class WorldScreen : Screen
         _navRenderer = new NavMeshRenderer();
         _navRenderer.Build(gd, _navMesh, _heights);
         _decorations = new WorldDecorations();
-        _decorations.Build(gd);
+        _decorations.Build(gd, _navMesh, _heights);
+        _paths = new WorldPaths();
+        _paths.Build(gd, _navMesh, _heights);
+        _spawnZones = new MonsterSpawnZones();
+        _spawnZones.Build(gd, _navMesh, _heights);
         (_decoVerts, _decoIdx, _buildings, _waypoints) = WorldDecorationSpawner.Build(_navMesh, _heights);
         _minimapRenderer = new MinimapRenderer();
         _minimapRenderer.Build(gd, _navMesh, _effect);
         _worldMap.Build(gd, _navMesh, _effect, _sw, _sh);
-        _worldNpcs.AddRange(WorldNpc.SpawnAll(_navMesh, _buildings));
+        _worldNpcs.AddRange(WorldNpc.SpawnAll(_navMesh, _buildings, _heights));
 
         BuildCharacterMesh();
         ComputeSkillBarBounds();
@@ -258,6 +271,8 @@ public class WorldScreen : Screen
         _minimapRenderer.Dispose();
         _worldMap.Dispose();
         _decorations.Dispose();
+        _paths.Dispose();
+        _spawnZones.Dispose();
     }
 
     private void OnLevelUp(object? sender, LevelUpEventArgs e)
@@ -725,7 +740,7 @@ public class WorldScreen : Screen
             return new();  // not cached — re-checked each time the player enters
         if (face.RoomId.HasValue && WorldDataService.GetRoom(face.RoomId.Value) is { HasMonsters: true } room)
         {
-            var spawned = MonsterSpawner.Spawn(_navMesh, faceIndex, room);
+            var spawned = MonsterSpawner.Spawn(_navMesh, faceIndex, room, _spawnZones.GetZones(faceIndex));
             foreach (var m in spawned)
                 m.Position = new Vector3(m.Position.X,
                     TerrainHeights.GetHeight(_heights, _navMesh, faceIndex, m.Position.X, m.Position.Z),
@@ -779,14 +794,14 @@ public class WorldScreen : Screen
             return;
         }
 
-        if (_nearbyNode.Spot == null)
+        if (_nearbyNode.Spot == null || _currentRoom == null)
         {
             AddFloatText("Nothing to gather here", Theme.ForegroundDim);
             return;
         }
 
-        var result = GatherService.GatherFromSpot(_player, _nearbyNode.Spot);
-        switch (result)
+        var outcome = GatherService.Gather(_player, _currentRoom);
+        switch (outcome.Result)
         {
             case GatherResult.Success:
                 _nearbyNode.TryConsume();
@@ -803,6 +818,10 @@ public class WorldScreen : Screen
                 break;
             case GatherResult.InventoryFull:
                 AddFloatText("Inventory full", new Color(200, 80, 60));
+                break;
+            case GatherResult.Depleted:
+            case GatherResult.NoSpots:
+                AddFloatText($"{_nearbyNode.Label} depleted today", new Color(160, 140, 100));
                 break;
         }
     }
@@ -1156,7 +1175,10 @@ public class WorldScreen : Screen
         gd.DepthStencilState = DepthStencilState.Default;
         gd.RasterizerState   = RasterizerState.CullCounterClockwise;
         gd.BlendState        = BlendState.Opaque;
-        gd.SamplerStates[0]  = SamplerState.LinearClamp;
+        // Wrap (not Clamp) so every textured mesh's UVs — computed from world-space
+        // edge lengths in MeshBuilder/NavMeshRenderer — repeat instead of stretching
+        // a single texel across the whole surface.
+        gd.SamplerStates[0]  = SamplerState.LinearWrap;
 
         float cosP     = MathF.Cos(_camPitch);
         Vector3 headPos = _pos + new Vector3(0f, 1.4f, 0f);
@@ -1178,6 +1200,16 @@ public class WorldScreen : Screen
         _navRenderer.Draw(gd, _effect);
 
         gd.RasterizerState = RasterizerState.CullCounterClockwise;
+        _effect.TextureEnabled = true;
+
+        // Worn dirt path strips connecting rooms, and monster-spawn clearing decals —
+        // both drawn flush against the floor, before props/characters on top of them.
+        _paths.Draw(gd, _effect);
+        _spawnZones.Draw(gd, _effect);
+
+        // Every prop/character mesh below shares the same neutral grain texture,
+        // multiplied by each mesh's own per-face vertex-color shading.
+        _effect.Texture = ProceduralTextures.Detail;
 
         // World decorations (trees, rocks, pillars, etc.)
         _decorations.Draw(gd, _effect);
@@ -1213,9 +1245,13 @@ public class WorldScreen : Screen
         {
             if (!m.IsAlive) continue;
 
-            // Target ring
+            // Target ring (plain vertex-colored line loop — no texture stage)
             if (m == _target)
+            {
+                _effect.TextureEnabled = false;
                 DrawTargetRing(gd, m.Position);
+                _effect.TextureEnabled = true;
+            }
 
             _effect.World = Matrix.CreateRotationY(m.Yaw) * Matrix.CreateTranslation(m.Position);
             foreach (var pass in _effect.CurrentTechnique.Passes)
@@ -1236,7 +1272,9 @@ public class WorldScreen : Screen
             if (overlayCol != Color.Transparent)
             {
                 float oa = m.HitFlashTimer > 0f ? flashAmt * 0.85f : 0.30f;
+                _effect.TextureEnabled = false;
                 DrawMonsterOverlay(gd, m, overlayCol * oa);
+                _effect.TextureEnabled = true;
             }
         }
 
@@ -1253,9 +1291,11 @@ public class WorldScreen : Screen
             }
         }
 
-        // Loot drops (flat quads on the floor)
+        // Loot drops (flat quads on the floor — plain vertex-colored, no texture stage)
+        _effect.TextureEnabled = false;
         foreach (var drop in _lootDrops)
             DrawLootDrop(gd, drop);
+        _effect.TextureEnabled = true;
 
         // Waypoint shrines (geometry baked into decoVerts, but WorldWaypoint also has its own mesh)
         _effect.World = Matrix.Identity;
@@ -1814,6 +1854,14 @@ public class WorldScreen : Screen
                     _activeService  = "class"; _classScroll = 0; _classIdx = -1;
                     _classChoices   = ClassManager.GetAllowedClasses(_player.Race).OrderBy(c => c).ToArray();
                     break;
+                case "craft":
+                    _activeService = "craft"; _craftScroll = 0; _craftIdx = -1; _craftQty = 1;
+                    LoadCraftRecipes();
+                    break;
+                case "upgrade":
+                    _activeService = "upgrade"; _upgradeScroll = 0; _upgradeIdx = -1;
+                    LoadUpgradeItems();
+                    break;
                 case "talk":
                     _npcDialogFeedback      = "...";
                     _npcDialogFeedbackTimer = 1.5f;
@@ -1848,9 +1896,11 @@ public class WorldScreen : Screen
     {
         switch (_activeService)
         {
-            case "shop":  HandleShopClick(pos);  break;
-            case "sell":  HandleSellClick(pos);  break;
-            case "class": HandleClassClick(pos); break;
+            case "shop":    HandleShopClick(pos);    break;
+            case "sell":    HandleSellClick(pos);    break;
+            case "class":   HandleClassClick(pos);   break;
+            case "craft":   HandleCraftClick(pos);   break;
+            case "upgrade": HandleUpgradeClick(pos); break;
         }
     }
 
@@ -1862,6 +1912,127 @@ public class WorldScreen : Screen
             _sellScroll  = Math.Clamp(_sellScroll  + delta, 0, Math.Max(0, _player.Inventory.Items.Count - 12));
         else if (_activeService == "class")
             _classScroll = Math.Clamp(_classScroll + delta, 0, Math.Max(0, _classChoices.Length - 12));
+        else if (_activeService == "craft")
+            _craftScroll = Math.Clamp(_craftScroll + delta, 0, Math.Max(0, _craftRecipes.Length - 12));
+        else if (_activeService == "upgrade")
+            _upgradeScroll = Math.Clamp(_upgradeScroll + delta, 0, Math.Max(0, _upgradeItems.Length - 12));
+    }
+
+    private void LoadCraftRecipes(string? keepId = null)
+    {
+        string jobId = _npcDialog?.Data.MasterJobId ?? "blacksmith";
+        int knowledge = JobXpService.GetLevel(JobManager.GetOrAdd(_player, jobId).KnowledgeXp);
+        _craftRecipes = CraftingService.GetRecipes(_npcDialog!.Data.Id)
+            .Where(r => r.RequiredKnowledgeLevel <= knowledge)
+            .ToArray();
+
+        _craftIdx = keepId != null
+            ? Array.FindIndex(_craftRecipes, r => r.OutputId == keepId)
+            : -1;
+        if (_craftIdx < 0 && _craftRecipes.Length > 0) _craftIdx = 0;
+        _craftQty = 1;
+    }
+
+    private void LoadUpgradeItems(string? keepId = null)
+    {
+        string category = _npcDialog?.Data.UpgradeCategory ?? "";
+        _upgradeItems = _player.Inventory.Items.OfType<EquipmentItem>()
+            .Where(e => e.UpgradeCategory == category)
+            .ToArray();
+
+        _upgradeIdx = keepId != null
+            ? Array.FindIndex(_upgradeItems, e => e.Id == keepId)
+            : -1;
+        if (_upgradeIdx < 0 && _upgradeItems.Length > 0) _upgradeIdx = 0;
+    }
+
+    private int CraftMaxQuantity(CraftingRecipe recipe)
+    {
+        int max = int.MaxValue;
+        foreach (var ing in recipe.Ingredients)
+        {
+            if (ing.Amount <= 0) continue;
+            int owned = _player.Inventory.Items.Where(i => i.Id == ing.ItemId).Sum(i => i.StackSize);
+            max = Math.Min(max, owned / ing.Amount);
+        }
+        return max == int.MaxValue ? 0 : max;
+    }
+
+    private void HandleCraftClick(Point pos)
+    {
+        const int W = 560, H = 400;
+        int px = (_sw - W) / 2, py = (_sh - H) / 2;
+        const int listX = 10, listY = 52, listW = 248, rowH = 23, visRows = 12;
+        int dx = px + listX + listW + 14;
+
+        if (new Rectangle(px + W / 2 - 60, py + H - 46, 120, 36).Contains(pos)) { _activeService = ""; return; }
+
+        for (int i = 0; i < visRows; i++)
+        {
+            int idx = _craftScroll + i;
+            if (idx >= _craftRecipes.Length) break;
+            if (new Rectangle(px + listX, py + listY + i * rowH, listW, rowH - 1).Contains(pos))
+            { _craftIdx = idx; _craftQty = 1; return; }
+        }
+
+        if (_craftIdx < 0 || _craftIdx >= _craftRecipes.Length) return;
+        var recipe = _craftRecipes[_craftIdx];
+        int maxQty = CraftMaxQuantity(recipe);
+
+        if (new Rectangle(dx, py + 250, 30, 30).Contains(pos)) { _craftQty = Math.Max(1, _craftQty - 1); return; }
+        if (new Rectangle(dx + 100, py + 250, 30, 30).Contains(pos)) { _craftQty = maxQty > 0 ? Math.Min(maxQty, _craftQty + 1) : _craftQty; return; }
+        if (new Rectangle(dx + 140, py + 250, 60, 30).Contains(pos)) { _craftQty = Math.Max(1, maxQty); return; }
+
+        if (maxQty > 0 && _craftQty > 0 && new Rectangle(dx, py + 300, 120, 36).Contains(pos))
+        {
+            var outcome = CraftExecutionService.Craft(_player, _npcDialog!.Data, recipe.OutputId, _craftQty);
+            _npcDialogFeedback = outcome.Success
+                ? $"Crafted x{outcome.Amount} {WorldDataService.Localize($"item.{recipe.OutputId}")}!"
+                : outcome.Reason switch
+                {
+                    "missing_ingredients" => "Not enough materials.",
+                    "inventory_full"      => "Inventory full.",
+                    _                     => "Cannot craft."
+                };
+            _npcDialogFeedbackTimer = 2.5f;
+            if (outcome.Success) LoadCraftRecipes(recipe.OutputId);
+        }
+    }
+
+    private void HandleUpgradeClick(Point pos)
+    {
+        const int W = 560, H = 400;
+        int px = (_sw - W) / 2, py = (_sh - H) / 2;
+        const int listX = 10, listY = 52, listW = 248, rowH = 23, visRows = 12;
+        int dx = px + listX + listW + 14;
+
+        if (new Rectangle(px + W / 2 - 60, py + H - 46, 120, 36).Contains(pos)) { _activeService = ""; return; }
+
+        for (int i = 0; i < visRows; i++)
+        {
+            int idx = _upgradeScroll + i;
+            if (idx >= _upgradeItems.Length) break;
+            if (new Rectangle(px + listX, py + listY + i * rowH, listW, rowH - 1).Contains(pos)) { _upgradeIdx = idx; return; }
+        }
+
+        if (_upgradeIdx < 0 || _upgradeIdx >= _upgradeItems.Length) return;
+        var item = _upgradeItems[_upgradeIdx];
+
+        if (new Rectangle(dx, py + 300, 120, 36).Contains(pos))
+        {
+            string currentId = item.Id;
+            var outcome = CraftExecutionService.Upgrade(_player, _npcDialog!.Data, item);
+            _npcDialogFeedback = outcome.Success
+                ? $"{WorldDataService.Localize($"item.{item.Id}")} upgraded to +{outcome.UpgradeLevel}!"
+                : outcome.Reason switch
+                {
+                    "knowledge_required" => "Knowledge level too low.",
+                    "missing_materials"  => "Not enough materials.",
+                    _                    => "Cannot upgrade."
+                };
+            _npcDialogFeedbackTimer = 2.5f;
+            if (outcome.Success) LoadUpgradeItems(currentId);
+        }
     }
 
     private void HandleShopClick(Point pos)
@@ -1979,9 +2150,11 @@ public class WorldScreen : Screen
     private void DrawNpcDialog(SpriteBatch sb)
     {
         if (_npcDialog == null) return;
-        if (_activeService == "shop")  { DrawShopPanel(sb);  return; }
-        if (_activeService == "sell")  { DrawSellPanel(sb);  return; }
-        if (_activeService == "class") { DrawClassPanel(sb); return; }
+        if (_activeService == "shop")    { DrawShopPanel(sb);    return; }
+        if (_activeService == "sell")    { DrawSellPanel(sb);    return; }
+        if (_activeService == "class")   { DrawClassPanel(sb);   return; }
+        if (_activeService == "craft")   { DrawCraftPanel(sb);   return; }
+        if (_activeService == "upgrade") { DrawUpgradePanel(sb); return; }
 
         const int panW = 460, panH = 320;
         int px = (_sw - panW) / 2;
@@ -2307,6 +2480,157 @@ public class WorldScreen : Screen
         DrawSubPanelBack(sb, px, py, W, H);
     }
 
+    private void DrawCraftPanel(SpriteBatch sb)
+    {
+        if (_npcDialog == null) return;
+        const int W = 560, H = 400;
+        int px = (_sw - W) / 2, py = (_sh - H) / 2;
+        int dx = px + 272;
+
+        DrawSubPanelFrame(sb, px, py, W, H, $"{_npcDialog.DisplayName}  -  Craft");
+
+        DrawSubPanelList(sb, px, py, _craftRecipes, _craftScroll, _craftIdx,
+            r =>
+            {
+                string name = WorldDataService.Localize($"item.{r.OutputId}");
+                if (name.Length > 21) name = name[..21];
+                return (name, "", Theme.Foreground);
+            });
+
+        int dy = py + 52;
+        if (_craftIdx >= 0 && _craftIdx < _craftRecipes.Length)
+        {
+            var recipe = _craftRecipes[_craftIdx];
+            string dname = WorldDataService.Localize($"item.{recipe.OutputId}");
+            Gfx.Text(sb, Assets.FontNormal, dname, new Vector2(dx, dy), Theme.GoldSoft); dy += 26;
+
+            Gfx.Text(sb, Assets.FontSmall, "Ingredients:", new Vector2(dx, dy), Theme.ForegroundDim); dy += 18;
+            foreach (var ing in recipe.Ingredients)
+            {
+                int owned = _player.Inventory.Items.Where(i => i.Id == ing.ItemId).Sum(i => i.StackSize);
+                string ingName = WorldDataService.Localize($"item.{ing.ItemId}");
+                bool enough = owned >= ing.Amount;
+                Gfx.Text(sb, Assets.FontSmall, $"  {ingName} x{ing.Amount}  (have {owned})",
+                    new Vector2(dx, dy), enough ? Theme.Foreground : new Color(200, 80, 60));
+                dy += 18;
+            }
+
+            int maxQty = CraftMaxQuantity(recipe);
+            dy = py + 220;
+            Gfx.Text(sb, Assets.FontSmall, $"XP reward: {recipe.XpReward}/craft", new Vector2(dx, dy), Theme.ForegroundDim);
+
+            var hover = Mouse.GetState().Position;
+            var minusR = new Rectangle(dx, py + 250, 30, 30);
+            Gfx.Rect(sb, minusR, minusR.Contains(hover) ? Theme.NavHover : Theme.PanelDark);
+            Gfx.Border(sb, minusR, Theme.Gold * 0.4f);
+            Gfx.TextCentered(sb, Assets.FontNormal, "-", minusR, Theme.Foreground);
+
+            var qtyR = new Rectangle(dx + 34, py + 250, 62, 30);
+            Gfx.TextCentered(sb, Assets.FontNormal, _craftQty.ToString(), qtyR, Theme.Foreground);
+
+            var plusR = new Rectangle(dx + 100, py + 250, 30, 30);
+            Gfx.Rect(sb, plusR, plusR.Contains(hover) ? Theme.NavHover : Theme.PanelDark);
+            Gfx.Border(sb, plusR, Theme.Gold * 0.4f);
+            Gfx.TextCentered(sb, Assets.FontNormal, "+", plusR, Theme.Foreground);
+
+            var maxR = new Rectangle(dx + 140, py + 250, 60, 30);
+            Gfx.Rect(sb, maxR, maxR.Contains(hover) ? Theme.NavHover : Theme.PanelDark);
+            Gfx.Border(sb, maxR, Theme.Gold * 0.4f);
+            Gfx.TextCentered(sb, Assets.FontSmall, "Max", maxR, Theme.Foreground);
+
+            if (_npcDialogFeedbackTimer > 0f)
+            {
+                float a = MathHelper.Clamp(_npcDialogFeedbackTimer, 0f, 1f);
+                Gfx.Text(sb, Assets.FontSmall, _npcDialogFeedback, new Vector2(dx, py + 288), new Color(100, 220, 130) * a);
+            }
+
+            bool canCraft = maxQty > 0 && _craftQty > 0;
+            var craftR  = new Rectangle(dx, py + 300, 120, 36);
+            bool craftOv = craftR.Contains(hover) && canCraft;
+            Gfx.Rect(sb, craftR, canCraft ? (craftOv ? Theme.NavHover : Theme.PanelDark) : new Color(28, 24, 32, 200));
+            Gfx.Border(sb, craftR, Theme.Gold * (canCraft ? (craftOv ? 0.9f : 0.5f) : 0.2f));
+            Gfx.TextCentered(sb, Assets.FontNormal, "Craft", craftR,
+                canCraft ? (craftOv ? Theme.GoldSoft : Theme.Foreground) : Theme.ForegroundDim);
+        }
+        else
+        {
+            Gfx.Text(sb, Assets.FontSmall, _craftRecipes.Length == 0 ? "No recipes known." : "Select a recipe.",
+                new Vector2(dx, dy + 10), Theme.ForegroundDim);
+        }
+
+        DrawSubPanelBack(sb, px, py, W, H);
+    }
+
+    private void DrawUpgradePanel(SpriteBatch sb)
+    {
+        if (_npcDialog == null) return;
+        const int W = 560, H = 400;
+        int px = (_sw - W) / 2, py = (_sh - H) / 2;
+        int dx = px + 272;
+
+        DrawSubPanelFrame(sb, px, py, W, H, $"{_npcDialog.DisplayName}  -  Upgrade");
+
+        DrawSubPanelList(sb, px, py, _upgradeItems, _upgradeScroll, _upgradeIdx,
+            eq =>
+            {
+                string name = WorldDataService.Localize($"item.{eq.Id}");
+                if (eq.UpgradeLevel > 0) name += $" +{eq.UpgradeLevel}";
+                if (name.Length > 21) name = name[..21];
+                return (name, "", Theme.Foreground);
+            });
+
+        int dy2 = py + 52;
+        if (_upgradeIdx >= 0 && _upgradeIdx < _upgradeItems.Length)
+        {
+            var item = _upgradeItems[_upgradeIdx];
+            string dname = WorldDataService.Localize($"item.{item.Id}");
+            Gfx.Text(sb, Assets.FontNormal, dname, new Vector2(dx, dy2), Theme.GoldSoft); dy2 += 24;
+            Gfx.Text(sb, Assets.FontSmall, $"Level: +{item.UpgradeLevel}", new Vector2(dx, dy2), Theme.ForegroundDim);
+
+            string jobId = _npcDialog.Data.MasterJobId ?? "blacksmith";
+            int knowledgeLevel = JobXpService.GetLevel(JobManager.GetOrAdd(_player, jobId).KnowledgeXp);
+            int knowledgeMax   = JobXpService.GetMaxUpgradeLevel(knowledgeLevel);
+            string matId = CraftingService.UpgradeMaterialFor(_npcDialog.Data.UpgradeCategory);
+            int matCount = CraftingService.UpgradeMaterialCount(item.UpgradeLevel);
+            int have     = _player.Inventory.Items.Where(i => i.Id == matId).Sum(i => i.StackSize);
+            string matName = WorldDataService.Localize($"item.{matId}");
+
+            bool atMax = item.UpgradeLevel >= knowledgeMax;
+            dy2 = py + 210;
+            if (atMax)
+            {
+                Gfx.Text(sb, Assets.FontSmall, "Max level for your knowledge.", new Vector2(dx, dy2), new Color(200, 80, 60));
+            }
+            else
+            {
+                Gfx.Text(sb, Assets.FontSmall, $"Cost: {matCount}x {matName}", new Vector2(dx, dy2), Theme.Foreground); dy2 += 20;
+                Gfx.Text(sb, Assets.FontSmall, $"You have: {have}", new Vector2(dx, dy2),
+                    have >= matCount ? Theme.ForegroundDim : new Color(200, 80, 60));
+            }
+
+            if (_npcDialogFeedbackTimer > 0f)
+            {
+                float a = MathHelper.Clamp(_npcDialogFeedbackTimer, 0f, 1f);
+                Gfx.Text(sb, Assets.FontSmall, _npcDialogFeedback, new Vector2(dx, py + 258), new Color(100, 220, 130) * a);
+            }
+
+            bool canUpgrade = !atMax && have >= matCount;
+            var upR  = new Rectangle(dx, py + 300, 120, 36);
+            bool upOv = upR.Contains(Mouse.GetState().Position) && canUpgrade;
+            Gfx.Rect(sb, upR, canUpgrade ? (upOv ? Theme.NavHover : Theme.PanelDark) : new Color(28, 24, 32, 200));
+            Gfx.Border(sb, upR, Theme.Gold * (canUpgrade ? (upOv ? 0.9f : 0.5f) : 0.2f));
+            Gfx.TextCentered(sb, Assets.FontNormal, "Upgrade", upR,
+                canUpgrade ? (upOv ? Theme.GoldSoft : Theme.Foreground) : Theme.ForegroundDim);
+        }
+        else
+        {
+            Gfx.Text(sb, Assets.FontSmall, _upgradeItems.Length == 0 ? "No eligible equipment." : "Select an item.",
+                new Vector2(dx, dy2 + 10), Theme.ForegroundDim);
+        }
+
+        DrawSubPanelBack(sb, px, py, W, H);
+    }
+
     private static string ServiceLabel(string svc) => svc switch
     {
         "heal"            => "Heal",
@@ -2538,7 +2862,7 @@ public class WorldScreen : Screen
         AddFloatText($"Equipped {WorldDataService.GetItemName(eq)}", new Color(120, 200, 120));
     }
 
-    private void TryUnequip(EquipmentType slot)
+    private void TryUnequip(string slot)
     {
         EquipmentItem? item = slot switch
         {
@@ -2589,7 +2913,7 @@ public class WorldScreen : Screen
         cy += 6;
 
         const int slotSz = 72;
-        (string Label, EquipmentItem? Item, EquipmentType SlotType)[] slots =
+        (string Label, EquipmentItem? Item, string SlotType)[] slots =
         {
             ("Weapon",    _player.WeaponSlot,    EquipmentType.Weapon),
             ("Armor",     _player.ArmorSlot,     EquipmentType.Armor),
@@ -2727,7 +3051,7 @@ public class WorldScreen : Screen
             new Vector2(px + panelW - cSz.X - 16, fy + 4), Theme.ForegroundDim);
     }
 
-    private static Color RarityColor(Myria.Lib.Core.Systems.Enums.ItemRarity rarity) => rarity switch
+    private static Color RarityColor(string rarity) => rarity switch
     {
         Myria.Lib.Core.Systems.Enums.ItemRarity.Common    => new Color(180, 180, 180),
         Myria.Lib.Core.Systems.Enums.ItemRarity.Uncommon  => new Color(60,  180, 70),
@@ -2779,7 +3103,7 @@ public class WorldScreen : Screen
 
     private void BuildCharacterMesh()
     {
-        var verts = new List<VertexPositionColor>();
+        var verts = new List<VertexPositionColorTexture>();
         var idx   = new List<int>();
 
         MeshBuilder.AddBox(verts, idx,

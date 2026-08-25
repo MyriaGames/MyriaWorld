@@ -15,7 +15,8 @@ public static class MonsterSpawner
     private const int MinSpawn = 2;
     private const int MaxSpawn = 4;
 
-    public static List<WorldMonster> Spawn(NavMesh navMesh, int faceIndex, Room room)
+    public static List<WorldMonster> Spawn(NavMesh navMesh, int faceIndex, Room room,
+        IReadOnlyList<MonsterSpawnZones.Zone> zones)
     {
         var result = new List<WorldMonster>();
         if (room.Monsters.Count == 0) return result;
@@ -26,7 +27,9 @@ public static class MonsterSpawner
             var template = PickTemplate(room);
             if (template == null) continue;
 
-            var xz  = RandomPointInFace(navMesh, faceIndex);
+            var xz  = zones.Count > 0
+                ? RandomPointInZone(navMesh, faceIndex, zones[_rng.Next(zones.Count)])
+                : RandomPointInFace(navMesh, faceIndex);
             var pos = new Vector3(xz.X, 0f, xz.Y);
             result.Add(new WorldMonster(template, pos, faceIndex));
         }
@@ -59,6 +62,23 @@ public static class MonsterSpawner
             }
         }
         return room.Monsters[_rng.Next(room.Monsters.Count)];
+    }
+
+    /// <summary>
+    /// Returns a random XZ position inside the given spawn clearing, using rejection
+    /// sampling within the zone's circle. Falls back to the zone center after 20
+    /// failed attempts (e.g. a zone that clips a concave edge of the face).
+    /// </summary>
+    private static Vector2 RandomPointInZone(NavMesh navMesh, int faceIndex, MonsterSpawnZones.Zone zone)
+    {
+        for (int attempt = 0; attempt < 20; attempt++)
+        {
+            float ang = (float)(_rng.NextDouble() * MathHelper.TwoPi);
+            float r   = zone.Radius * MathF.Sqrt((float)_rng.NextDouble());
+            var   p   = zone.Center + new Vector2(MathF.Cos(ang), MathF.Sin(ang)) * r;
+            if (navMesh.FindFaceIndex(p) == faceIndex) return p;
+        }
+        return zone.Center;
     }
 
     /// <summary>

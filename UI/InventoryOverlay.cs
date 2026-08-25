@@ -110,7 +110,7 @@ public sealed class InventoryOverlay
         }
     }
 
-    private static Color RarityColor(ItemRarity r) => r switch
+    private static Color RarityColor(string r) => r switch
     {
         ItemRarity.Uncommon  => new Color(30,  200, 80),
         ItemRarity.Rare      => new Color(60,  120, 220),

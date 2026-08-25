@@ -11,7 +11,7 @@ public sealed class WorldWaypoint
 
     public const float InteractRange = 5f;
 
-    public VertexPositionColor[] MeshVerts { get; }
+    public VertexPositionColorTexture[] MeshVerts { get; }
     public int[]                 MeshIdx   { get; }
 
     public WorldWaypoint(string name, int roomId, Vector3 position)
@@ -23,9 +23,9 @@ public sealed class WorldWaypoint
     }
 
     // Stone pillar with glowing blue crystal cap
-    private static (VertexPositionColor[], int[]) BuildMesh()
+    private static (VertexPositionColorTexture[], int[]) BuildMesh()
     {
-        var v = new List<VertexPositionColor>();
+        var v = new List<VertexPositionColorTexture>();
         var i = new List<int>();
 
         var stoneB = new Color(130, 122, 138);

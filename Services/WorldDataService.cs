@@ -36,6 +36,11 @@ public static class WorldDataService
         GameService.InitializeGame();
         QuestManager.LoadQuests();
 
+        // Shared Myria.Lib localization system — Npc.ToString() (NPC display names) and other
+        // shared-lib code resolve their locale keys through this, independently of the
+        // Mono-only _locale dictionary below (which backs WorldDataService.Localize/GetItemName).
+        Myria.Lib.Core.Systems.Localization.Load(Myria.Lib.Core.Systems.Enums.GameLanguage.En);
+
         if (File.Exists("Data/locales/en.json"))
         {
             _locale = JsonSerializer.Deserialize<Dictionary<string, string>>(

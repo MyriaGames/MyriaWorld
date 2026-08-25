@@ -10,68 +10,96 @@ namespace Myria.Mono.World;
 /// </summary>
 public sealed class NavMeshRenderer : IDisposable
 {
-    // Face terrain → base colour
+    // Flat terrain tones used by the 2D minimap/world-map overlays (those stay
+    // vertex-colored — no benefit from real texture sampling at that zoom level).
     private static readonly Dictionary<string, Color> TerrainColors = new()
     {
-        ["grass"]   = new Color(42,  68,  42),
-        ["forest"]  = new Color(28,  52,  28),
-        ["dirt"]    = new Color(90,  65,  40),
-        ["stone"]   = new Color(75,  75,  80),
-        ["sand"]    = new Color(170, 145, 85),
-        ["snow"]    = new Color(200, 210, 220),
-        ["wood"]    = new Color(90,  65,  45),
-        ["water"]   = new Color(30,  60, 120),
+        ["grass"]    = new Color(42,  68,  42),
+        ["forest"]   = new Color(28,  52,  28),
+        ["dirt"]     = new Color(90,  65,  40),
+        ["stone"]    = new Color(75,  75,  80),
+        ["sand"]     = new Color(170, 145, 85),
+        ["snow"]     = new Color(200, 210, 220),
+        ["wood"]     = new Color(90,  65,  45),
+        ["water"]    = new Color(30,  60, 120),
         ["cave"]     = new Color(35,  30,  40),
         ["dungeon"]  = new Color(25,  18,  30),
         ["city"]     = new Color(95,  88,  80),
         ["interior"] = new Color(145, 128, 100),
     };
 
-    /// <summary>Returns the floor colour for the given terrain type string.</summary>
+    /// <summary>Returns the flat floor colour for the given terrain type string
+    /// (used by the 2D minimap/world-map overlays).</summary>
     public static Color TerrainColor(string terrain)
         => TerrainColors.GetValueOrDefault(terrain, new Color(50, 50, 50));
 
     // Use CullNone for the floor so winding order in the JSON doesn't matter.
     private static readonly RasterizerState NoCull = new() { CullMode = CullMode.None };
 
-    private VertexBuffer? _vb;
-    private IndexBuffer?  _ib;
-    private int           _triCount;
+    // One draw group per terrain type — each needs its own bound Texture2D, so they
+    // can't share a single vertex/index buffer draw call the way the old flat-colored
+    // floor did.
+    private sealed class TerrainGroup
+    {
+        public required string       Terrain;
+        public required VertexBuffer Vb;
+        public required IndexBuffer  Ib;
+        public required int          TriCount;
+    }
+
+    private readonly List<TerrainGroup> _groups = [];
 
     // Portal edge lines (CPU array — small enough to not need a VB)
     private VertexPositionColor[] _portalLines = [];
 
     public void Build(GraphicsDevice gd, NavMesh mesh, float[] heights)
     {
-        var verts = new List<VertexPositionColor>();
-        var idx   = new List<int>();
+        DisposeGroups();
+
+        // World-space UV so the sampler's wrap addressing tiles the terrain texture
+        // at a consistent density regardless of face size.
+        const float tile = 3.0f;
+
+        var byTerrain = new Dictionary<string, (List<VertexPositionColorTexture> v, List<int> idx)>();
 
         foreach (var face in mesh.Faces)
         {
-            Color c = TerrainColors.GetValueOrDefault(face.Terrain, new Color(50, 50, 50));
+            if (!byTerrain.TryGetValue(face.Terrain, out var bucket))
+                byTerrain[face.Terrain] = bucket = (new List<VertexPositionColorTexture>(), new List<int>());
 
             // Fan triangulation (correct for any convex polygon)
-            int baseV = verts.Count;
+            int baseV = bucket.v.Count;
             foreach (int vi in face.VertexIndices)
             {
                 var xz = mesh.Vertices[vi];
-                verts.Add(new VertexPositionColor(new Vector3(xz.X, heights[vi], xz.Y), c));
+                float h = heights[vi];
+                // Full-brightness vertex color with a subtle height-based shade so the
+                // texture itself carries the terrain's hue instead of being darkened by
+                // the old flat per-terrain fill color.
+                float shade = MathHelper.Clamp(0.92f + h * 0.01f, 0.8f, 1.08f);
+                var col = new Color(shade, shade, shade);
+                bucket.v.Add(new VertexPositionColorTexture(
+                    new Vector3(xz.X, h, xz.Y), col, new Vector2(xz.X / tile, xz.Y / tile)));
             }
             for (int i = 1; i < face.VertexIndices.Length - 1; i++)
             {
-                idx.Add(baseV);
-                idx.Add(baseV + i);
-                idx.Add(baseV + i + 1);
+                bucket.idx.Add(baseV);
+                bucket.idx.Add(baseV + i);
+                bucket.idx.Add(baseV + i + 1);
             }
         }
 
-        _triCount = idx.Count / 3;
+        foreach (var (terrain, bucket) in byTerrain)
+        {
+            if (bucket.v.Count == 0) continue;
 
-        _vb = new VertexBuffer(gd, typeof(VertexPositionColor), verts.Count, BufferUsage.WriteOnly);
-        _vb.SetData(verts.ToArray());
+            var vb = new VertexBuffer(gd, typeof(VertexPositionColorTexture), bucket.v.Count, BufferUsage.WriteOnly);
+            vb.SetData(bucket.v.ToArray());
+            var ib = new IndexBuffer(gd, IndexElementSize.ThirtyTwoBits, bucket.idx.Count, BufferUsage.WriteOnly);
+            ib.SetData(bucket.idx.ToArray());
 
-        _ib = new IndexBuffer(gd, IndexElementSize.ThirtyTwoBits, idx.Count, BufferUsage.WriteOnly);
-        _ib.SetData(idx.ToArray());
+            _groups.Add(new TerrainGroup { Terrain = terrain, Vb = vb, Ib = ib, TriCount = bucket.idx.Count / 3 });
+        }
 
         // Portal edge lines — drawn 5 cm above floor to avoid Z-fighting
         Color portalCol = new Color(200, 170, 80, 160);
@@ -95,24 +123,29 @@ public sealed class NavMeshRenderer : IDisposable
 
     public void Draw(GraphicsDevice gd, BasicEffect effect)
     {
-        if (_vb == null || _ib == null) return;
+        if (_groups.Count == 0) return;
 
         var prevRaster = gd.RasterizerState;
         gd.RasterizerState = NoCull;
 
-        gd.SetVertexBuffer(_vb);
-        gd.Indices = _ib;
-
         effect.World = Matrix.Identity;
-        foreach (var pass in effect.CurrentTechnique.Passes)
+        effect.TextureEnabled = true;
+        foreach (var group in _groups)
         {
-            pass.Apply();
-            gd.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, _triCount);
+            effect.Texture = ProceduralTextures.TerrainTile(group.Terrain);
+            gd.SetVertexBuffer(group.Vb);
+            gd.Indices = group.Ib;
+            foreach (var pass in effect.CurrentTechnique.Passes)
+            {
+                pass.Apply();
+                gd.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, group.TriCount);
+            }
         }
 
-        // Portal boundaries
+        // Portal boundaries — plain vertex-colored lines, no texture stage.
         if (_portalLines.Length >= 2)
         {
+            effect.TextureEnabled = false;
             effect.World = Matrix.Identity;
             foreach (var pass in effect.CurrentTechnique.Passes)
             {
@@ -125,9 +158,11 @@ public sealed class NavMeshRenderer : IDisposable
         gd.RasterizerState = prevRaster;
     }
 
-    public void Dispose()
+    private void DisposeGroups()
     {
-        _vb?.Dispose();
-        _ib?.Dispose();
+        foreach (var g in _groups) { g.Vb.Dispose(); g.Ib.Dispose(); }
+        _groups.Clear();
     }
+
+    public void Dispose() => DisposeGroups();
 }

@@ -66,8 +66,8 @@ Legend: ✅ Done | 🔧 In Progress | ⬜ Not Started | ⚠️ Partial
 | NPC2 | sell_items | ✅ Done | Shows player inventory with sell value; Sell 1 / Sell All buttons. |
 | NPC3 | learn_job | ✅ Done | Immediate action; sets `ActiveJobId` via JobManager with cooldown check. |
 | NPC4 | change_class | ✅ Done | Class list panel; shows group + level; calls ClassManager.SetClass + refreshes skills. |
-| NPC5 | upgrade / craft | ⬜ Not Started | Still show "coming soon". |
+| NPC5 | upgrade / craft | ✅ Done | Craft sub-panel: recipe list, ingredient check, quantity stepper, Craft button. Upgrade sub-panel: eligible-equipment list, material cost/level check, Upgrade button. Both delegate to `CraftExecutionService.Craft`/`.Upgrade` (shared with WPF/server). |
 
 ---
 
-_Last updated: 2026-06-20 (session 5)_
+_Last updated: 2026-08-19 (session 6)_

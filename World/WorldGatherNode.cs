@@ -11,19 +11,19 @@ namespace Myria.Mono.World;
 /// </summary>
 public sealed class WorldGatherNode
 {
-    public GatheringType  Type             { get; }
+    public string         Type             { get; }
     public Vector3        Position         { get; }
     public string         Label            { get; }
     public GatheringSpot? Spot             { get; }
     public int            GathersRemaining { get; private set; }
     public bool           IsDepleted       => GathersRemaining <= 0;
 
-    public VertexPositionColor[] MeshVerts { get; }
+    public VertexPositionColorTexture[] MeshVerts { get; }
     public int[]                 MeshIdx   { get; }
 
     public const float InteractRange = 3.5f;
 
-    public WorldGatherNode(GatheringType type, Vector3 position, string label, GatheringSpot? spot)
+    public WorldGatherNode(string type, Vector3 position, string label, GatheringSpot? spot)
     {
         Type     = type;
         Position = position;
@@ -41,9 +41,9 @@ public sealed class WorldGatherNode
         return true;
     }
 
-    private static (VertexPositionColor[], int[]) BuildMesh(GatheringType type)
+    private static (VertexPositionColorTexture[], int[]) BuildMesh(string type)
     {
-        var verts = new List<VertexPositionColor>();
+        var verts = new List<VertexPositionColorTexture>();
         var idx   = new List<int>();
 
         switch (type)

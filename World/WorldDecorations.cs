@@ -13,11 +13,20 @@ public sealed class WorldDecorations : IDisposable
     private IndexBuffer?  _ib;
     private int           _triCount;
 
+    // Set for the duration of Build() so the prop helpers below can ground-snap
+    // (or skip) each prop against the actual navmesh/terrain instead of the
+    // hardcoded y=0 the zone builders were authored against.
+    private static NavMesh? _mesh;
+    private static float[]  _heights = [];
+
     // ── Public API ────────────────────────────────────────────────────────────
 
-    public void Build(GraphicsDevice gd)
+    public void Build(GraphicsDevice gd, NavMesh mesh, float[] heights)
     {
-        var verts = new List<VertexPositionColor>();
+        _mesh    = mesh;
+        _heights = heights;
+
+        var verts = new List<VertexPositionColorTexture>();
         var idx   = new List<int>();
 
         BuildLumina(verts, idx);
@@ -33,13 +42,31 @@ public sealed class WorldDecorations : IDisposable
         BuildPlateauSouth2(verts, idx);
         BuildWhisperingWoods(verts, idx);
 
+        _mesh = null;
+        _heights = [];
+
         if (verts.Count == 0) return;
 
         _triCount = idx.Count / 3;
-        _vb = new VertexBuffer(gd, typeof(VertexPositionColor), verts.Count, BufferUsage.WriteOnly);
+        _vb = new VertexBuffer(gd, typeof(VertexPositionColorTexture), verts.Count, BufferUsage.WriteOnly);
         _vb.SetData(verts.ToArray());
         _ib = new IndexBuffer(gd, IndexElementSize.ThirtyTwoBits, idx.Count, BufferUsage.WriteOnly);
         _ib.SetData(idx.ToArray());
+    }
+
+    /// <summary>
+    /// Resolves the ground height for a hardcoded zone-space (x, z) against the actual navmesh.
+    /// Returns false when the point falls outside every face (the zone constants pre-date the
+    /// current world.json room layout, so some no longer land inside any room) — the caller
+    /// should skip that prop rather than draw it floating with no ground beneath it.
+    /// </summary>
+    private static bool TryGroundY(float x, float z, out float y)
+    {
+        if (_mesh == null) { y = 0f; return true; }
+        int fi = _mesh.FindFaceIndex(new Vector2(x, z));
+        if (fi < 0) { y = 0f; return false; }
+        y = TerrainHeights.GetHeight(_heights, _mesh, fi, x, z);
+        return true;
     }
 
     public void Draw(GraphicsDevice gd, BasicEffect effect)
@@ -64,7 +91,7 @@ public sealed class WorldDecorations : IDisposable
     // ── Zone builders ─────────────────────────────────────────────────────────
 
     // Zone 0 – Lumina (grass plaza, X[-60,60] Z[-60,60])
-    private static void BuildLumina(List<VertexPositionColor> v, List<int> i)
+    private static void BuildLumina(List<VertexPositionColorTexture> v, List<int> i)
     {
         // Perimeter trees — pull in 8 u from each edge so they're inside the face
         float[] northSouthX = { -44, -28, -12, 12, 28, 44 };
@@ -103,7 +130,7 @@ public sealed class WorldDecorations : IDisposable
     }
 
     // Zone 1 – Forest Edge (grass, X[-60,60] Z[-180,-60])
-    private static void BuildForestEdge(List<VertexPositionColor> v, List<int> i)
+    private static void BuildForestEdge(List<VertexPositionColorTexture> v, List<int> i)
     {
         // Dense irregular grid of trees — leave a loose corridor near x=0 for travel
         (float x, float z, float h)[] trees =
@@ -131,7 +158,7 @@ public sealed class WorldDecorations : IDisposable
     }
 
     // Zone 2 – South Fields (dirt, X[-60,60] Z[60,180])
-    private static void BuildSouthFields(List<VertexPositionColor> v, List<int> i)
+    private static void BuildSouthFields(List<VertexPositionColorTexture> v, List<int> i)
     {
         // Rocks strewn across the dirt field
         AddRock(v, i, new Vector3(-38f, 0f,  80f), 1.5f);
@@ -163,7 +190,7 @@ public sealed class WorldDecorations : IDisposable
     }
 
     // Zone 3 – East Gate (stone, X[60,180] Z[-60,60])
-    private static void BuildEastGate(List<VertexPositionColor> v, List<int> i)
+    private static void BuildEastGate(List<VertexPositionColorTexture> v, List<int> i)
     {
         // Entrance gate — two tall pillars with cross-beam
         AddPillar(v, i, new Vector3(72f, 0f, -22f), 5.2f);
@@ -205,7 +232,7 @@ public sealed class WorldDecorations : IDisposable
     }
 
     // Zone 4 – West Meadow (grass, X[-180,-60] Z[-60,60])
-    private static void BuildWestMeadow(List<VertexPositionColor> v, List<int> i)
+    private static void BuildWestMeadow(List<VertexPositionColorTexture> v, List<int> i)
     {
         // Scattered trees across the meadow
         (float x, float z, float h)[] trees =
@@ -231,9 +258,12 @@ public sealed class WorldDecorations : IDisposable
 
     // ── Prop helpers ──────────────────────────────────────────────────────────
 
-    private static void AddTree(List<VertexPositionColor> v, List<int> i,
+    private static void AddTree(List<VertexPositionColorTexture> v, List<int> i,
                                 Vector3 pos, float trunkH = 2.4f)
     {
+        if (!TryGroundY(pos.X, pos.Z, out float gy)) return;
+        pos = new Vector3(pos.X, gy, pos.Z);
+
         // Trunk
         MeshBuilder.AddBox(v, i,
             pos + new Vector3(-0.22f, 0f,    -0.22f),
@@ -254,9 +284,12 @@ public sealed class WorldDecorations : IDisposable
             new Color(44, 88, 36), new Color(30, 60, 22));
     }
 
-    private static void AddRock(List<VertexPositionColor> v, List<int> i,
+    private static void AddRock(List<VertexPositionColorTexture> v, List<int> i,
                                 Vector3 pos, float scale = 1f)
     {
+        if (!TryGroundY(pos.X, pos.Z, out float gy)) return;
+        pos = new Vector3(pos.X, gy, pos.Z);
+
         MeshBuilder.AddBox(v, i,
             pos + new Vector3(-0.62f * scale, 0f,            -0.50f * scale),
             pos + new Vector3( 0.62f * scale,  0.68f * scale,  0.50f * scale),
@@ -267,9 +300,12 @@ public sealed class WorldDecorations : IDisposable
             new Color(112, 106, 100), new Color(76, 72, 68));
     }
 
-    private static void AddPillar(List<VertexPositionColor> v, List<int> i,
+    private static void AddPillar(List<VertexPositionColorTexture> v, List<int> i,
                                   Vector3 pos, float h = 4.5f)
     {
+        if (!TryGroundY(pos.X, pos.Z, out float gy)) return;
+        pos = new Vector3(pos.X, gy, pos.Z);
+
         // Shaft
         MeshBuilder.AddBox(v, i,
             pos + new Vector3(-0.38f, 0f, -0.38f),
@@ -282,8 +318,11 @@ public sealed class WorldDecorations : IDisposable
             new Color(108, 103, 98), new Color(74, 70, 66));
     }
 
-    private static void AddStump(List<VertexPositionColor> v, List<int> i, Vector3 pos)
+    private static void AddStump(List<VertexPositionColorTexture> v, List<int> i, Vector3 pos)
     {
+        if (!TryGroundY(pos.X, pos.Z, out float gy)) return;
+        pos = new Vector3(pos.X, gy, pos.Z);
+
         MeshBuilder.AddBox(v, i,
             pos + new Vector3(-0.42f, 0f,    -0.42f),
             pos + new Vector3( 0.42f, 0.48f,  0.42f),
@@ -295,7 +334,7 @@ public sealed class WorldDecorations : IDisposable
     }
 
     // Zone 8 – Echo Chamber (stone, X[-60,60] Z[-420,-300])
-    private static void BuildEchoChamber(List<VertexPositionColor> v, List<int> i)
+    private static void BuildEchoChamber(List<VertexPositionColorTexture> v, List<int> i)
     {
         // Glowing mushroom clusters
         AddMushroom(v, i, new Vector3(-38f, 0f, -318f), 1.4f);
@@ -343,7 +382,7 @@ public sealed class WorldDecorations : IDisposable
     }
 
     // Zone 9 – Nuvmito Turn (grass, X[300,420] Z[-60,60])
-    private static void BuildNuvmitoTurn(List<VertexPositionColor> v, List<int> i)
+    private static void BuildNuvmitoTurn(List<VertexPositionColorTexture> v, List<int> i)
     {
         // Dramatic viewpoint rock formation at the bend (northeast corner)
         AddRock(v, i, new Vector3(395f, 0f, -46f), 2.8f);
@@ -388,7 +427,7 @@ public sealed class WorldDecorations : IDisposable
     }
 
     // Zone 10 – Plateau South (stone, X[-60,60] Z[300,420])
-    private static void BuildPlateauSouth2(List<VertexPositionColor> v, List<int> i)
+    private static void BuildPlateauSouth2(List<VertexPositionColorTexture> v, List<int> i)
     {
         // Extended cliff walls (continuation of zone 7 walls)
         MeshBuilder.AddBox(v, i,
@@ -444,7 +483,7 @@ public sealed class WorldDecorations : IDisposable
     }
 
     // Zone 11 – Whispering Woods (grass, X[180,300] Z[60,180])
-    private static void BuildWhisperingWoods(List<VertexPositionColor> v, List<int> i)
+    private static void BuildWhisperingWoods(List<VertexPositionColorTexture> v, List<int> i)
     {
         // Dense old-growth canopy — very tall trees in tight groups
         (float x, float z, float h)[] trees =
@@ -506,9 +545,12 @@ public sealed class WorldDecorations : IDisposable
     }
 
     // Cave mushroom — glowing cyan cap on a pale stem
-    private static void AddMushroom(List<VertexPositionColor> v, List<int> i,
+    private static void AddMushroom(List<VertexPositionColorTexture> v, List<int> i,
                                     Vector3 pos, float scale = 1f)
     {
+        if (!TryGroundY(pos.X, pos.Z, out float gy)) return;
+        pos = new Vector3(pos.X, gy, pos.Z);
+
         MeshBuilder.AddBox(v, i,
             pos + new Vector3(-0.10f * scale, 0f,           -0.10f * scale),
             pos + new Vector3( 0.10f * scale,  0.46f * scale, 0.10f * scale),
@@ -520,25 +562,31 @@ public sealed class WorldDecorations : IDisposable
     }
 
     // Surface root ridges radiating from a tree base
-    private static void AddRoots(List<VertexPositionColor> v, List<int> i,
+    private static void AddRoots(List<VertexPositionColorTexture> v, List<int> i,
                                   Vector3 pos, float reach = 1.2f)
     {
+        if (!TryGroundY(pos.X, pos.Z, out float gy)) return;
+        pos = new Vector3(pos.X, gy, pos.Z);
+
         float[] angles = { 0f, MathF.PI * 0.5f, MathF.PI, MathF.PI * 1.5f };
         foreach (float a in angles)
         {
             float cx = MathF.Cos(a) * reach * 0.55f;
             float cz = MathF.Sin(a) * reach * 0.55f;
             MeshBuilder.AddBox(v, i,
-                new Vector3(pos.X + cx - 0.09f, 0f,     pos.Z + cz - 0.09f),
-                new Vector3(pos.X + cx + 0.09f, 0.22f,  pos.Z + cz + 0.09f),
+                new Vector3(pos.X + cx - 0.09f, pos.Y,        pos.Z + cz - 0.09f),
+                new Vector3(pos.X + cx + 0.09f, pos.Y + 0.22f, pos.Z + cz + 0.09f),
                 new Color(88, 55, 24), new Color(60, 38, 14));
         }
     }
 
     // Mine support frame — two uprights and a crossbeam spanning ~3.2 u wide
-    private static void AddTimber(List<VertexPositionColor> v, List<int> i,
+    private static void AddTimber(List<VertexPositionColorTexture> v, List<int> i,
                                   Vector3 pos, float h = 2.8f)
     {
+        if (!TryGroundY(pos.X, pos.Z, out float gy)) return;
+        pos = new Vector3(pos.X, gy, pos.Z);
+
         MeshBuilder.AddBox(v, i,
             pos + new Vector3(-1.6f, 0f,    -0.15f),
             pos + new Vector3(-1.3f, h,      0.15f),
@@ -553,9 +601,12 @@ public sealed class WorldDecorations : IDisposable
             new Color(90, 64, 34), new Color(62, 44, 22));
     }
 
-    private static void AddBench(List<VertexPositionColor> v, List<int> i,
+    private static void AddBench(List<VertexPositionColorTexture> v, List<int> i,
                                  Vector3 pos, float yawRad)
     {
+        if (!TryGroundY(pos.X, pos.Z, out float gy)) return;
+        pos = new Vector3(pos.X, gy, pos.Z);
+
         // Seat
         float cos = MathF.Cos(yawRad), sin = MathF.Sin(yawRad);
         // Rotate offset (1.4, 0, 0) by yaw
@@ -574,7 +625,7 @@ public sealed class WorldDecorations : IDisposable
     }
 
     // Zone 5 – Lumina Caves entrance (stone, X[-60,60] Z[-300,-180])
-    private static void BuildCaveEntrance(List<VertexPositionColor> v, List<int> i)
+    private static void BuildCaveEntrance(List<VertexPositionColorTexture> v, List<int> i)
     {
         // Mine mouth arch just past the portal (z ≈ -185)
         AddTimber(v, i, new Vector3(0f, 0f, -192f), 3.4f);
@@ -608,7 +659,7 @@ public sealed class WorldDecorations : IDisposable
     }
 
     // Zone 6 – Nuvmito Trail (grass, X[180,300] Z[-60,60])
-    private static void BuildNuvmitoTrail(List<VertexPositionColor> v, List<int> i)
+    private static void BuildNuvmitoTrail(List<VertexPositionColorTexture> v, List<int> i)
     {
         // Dense tree canopy along north and south edges
         (float x, float z, float h)[] trees =
@@ -648,7 +699,7 @@ public sealed class WorldDecorations : IDisposable
     }
 
     // Zone 7 – Plateau Pass (stone, X[-60,60] Z[180,300])
-    private static void BuildPlateauPass(List<VertexPositionColor> v, List<int> i)
+    private static void BuildPlateauPass(List<VertexPositionColorTexture> v, List<int> i)
     {
         // Cliff-face walls flanking the pass (east and west)
         MeshBuilder.AddBox(v, i,
@@ -700,8 +751,11 @@ public sealed class WorldDecorations : IDisposable
             new Color(100, 95, 88), new Color(68, 64, 58));
     }
 
-    private static void AddWell(List<VertexPositionColor> v, List<int> i, Vector3 pos)
+    private static void AddWell(List<VertexPositionColorTexture> v, List<int> i, Vector3 pos)
     {
+        if (!TryGroundY(pos.X, pos.Z, out float gy)) return;
+        pos = new Vector3(pos.X, gy, pos.Z);
+
         // Stone ring wall — four corner posts
         const float r = 1.0f, wall = 0.25f, h = 0.9f;
         (float dx, float dz)[] corners = { (-r, -r), (r, -r), (r, r), (-r, r) };

@@ -30,12 +30,12 @@ public static class WorldDecorationSpawner
         (61, "Xarra"),
     ];
 
-    public static (VertexPositionColor[] verts, int[] idx,
+    public static (VertexPositionColorTexture[] verts, int[] idx,
                    IReadOnlyList<WorldBuilding>  buildings,
                    IReadOnlyList<WorldWaypoint>  waypoints) Build(
         NavMesh navMesh, float[] heights)
     {
-        var v   = new List<VertexPositionColor>();
+        var v   = new List<VertexPositionColorTexture>();
         var i   = new List<int>();
         var bl  = new List<WorldBuilding>();
         var wps = new List<WorldWaypoint>();
@@ -49,7 +49,7 @@ public static class WorldDecorationSpawner
     // ── Per-face spawning ─────────────────────────────────────────────────────
 
     private static void SpawnFace(NavMesh navMesh, int fi, float[] heights,
-        List<VertexPositionColor> v, List<int> i,
+        List<VertexPositionColorTexture> v, List<int> i,
         List<WorldBuilding> buildings, List<WorldWaypoint> waypoints)
     {
         var face = navMesh.Faces[fi];
@@ -126,7 +126,7 @@ public static class WorldDecorationSpawner
 
     // Shrine geometry lives in WorldWaypoint.MeshVerts — just register the waypoint here
     private static void PlaceWaypointIfNeeded(NavMesh navMesh, int fi, float[] heights,
-        List<VertexPositionColor> _, List<int> __, List<WorldWaypoint> waypoints)
+        List<VertexPositionColorTexture> _, List<int> __, List<WorldWaypoint> waypoints)
     {
         var face = navMesh.Faces[fi];
         if (!face.RoomId.HasValue) return;
@@ -147,9 +147,9 @@ public static class WorldDecorationSpawner
     // ── Append a single decoration ────────────────────────────────────────────
 
     private static void Append(Deco type, Vector3 pos, float rotY, Random rng,
-        List<VertexPositionColor> verts, List<int> idx)
+        List<VertexPositionColorTexture> verts, List<int> idx)
     {
-        var local  = new List<VertexPositionColor>();
+        var local  = new List<VertexPositionColorTexture>();
         var localI = new List<int>();
 
         switch (type)
@@ -165,15 +165,15 @@ public static class WorldDecorationSpawner
         var rot   = Matrix.CreateRotationY(rotY);
         int baseI = verts.Count;
         foreach (var vert in local)
-            verts.Add(new VertexPositionColor(
-                Vector3.Transform(vert.Position, rot) + pos, vert.Color));
+            verts.Add(new VertexPositionColorTexture(
+                Vector3.Transform(vert.Position, rot) + pos, vert.Color, vert.TextureCoordinate));
         foreach (int i in localI)
             idx.Add(baseI + i);
     }
 
     // ── Geometry builders ─────────────────────────────────────────────────────
 
-    private static void BuildTree(List<VertexPositionColor> v, List<int> i)
+    private static void BuildTree(List<VertexPositionColorTexture> v, List<int> i)
     {
         var trunkB = new Color(100, 65, 30);
         var trunkD = new Color(65,  40, 18);
@@ -191,7 +191,7 @@ public static class WorldDecorationSpawner
             3.0f, leafB, leafD);
     }
 
-    private static void BuildPine(List<VertexPositionColor> v, List<int> i)
+    private static void BuildPine(List<VertexPositionColorTexture> v, List<int> i)
     {
         var trunkB = new Color(85, 52, 22);
         var trunkD = new Color(58, 35, 14);
@@ -220,7 +220,7 @@ public static class WorldDecorationSpawner
             2.8f, g1, g3);
     }
 
-    private static void BuildHouse(List<VertexPositionColor> v, List<int> i)
+    private static void BuildHouse(List<VertexPositionColorTexture> v, List<int> i)
     {
         const float w = 6f, h = 3.8f, d = 6f;
         var wallB = new Color(198, 178, 148);
@@ -239,7 +239,7 @@ public static class WorldDecorationSpawner
             h + 2.4f, roofB, roofD);
     }
 
-    private static void BuildRock(List<VertexPositionColor> v, List<int> i, Random rng)
+    private static void BuildRock(List<VertexPositionColorTexture> v, List<int> i, Random rng)
     {
         float sx = 0.6f + (float)rng.NextDouble() * 0.7f;
         float sy = 0.35f + (float)rng.NextDouble() * 0.4f;
@@ -253,7 +253,7 @@ public static class WorldDecorationSpawner
             r1, r2);
     }
 
-    private static void BuildGrass(List<VertexPositionColor> v, List<int> i)
+    private static void BuildGrass(List<VertexPositionColorTexture> v, List<int> i)
     {
         var g1 = new Color(82, 152, 42);
         var g2 = new Color(56, 108, 28);
@@ -275,7 +275,7 @@ public static class WorldDecorationSpawner
             new Vector3(0f, h, -hw * 0.5f), new Vector3(0f, h, hw * 0.5f), g2);
     }
 
-    private static void BuildStalactite(List<VertexPositionColor> v, List<int> i)
+    private static void BuildStalactite(List<VertexPositionColorTexture> v, List<int> i)
     {
         var s1 = new Color(125, 120, 110);
         var s2 = new Color(85,  82,  75);

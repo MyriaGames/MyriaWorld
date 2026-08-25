@@ -149,7 +149,7 @@ public sealed class ShopOverlay
             Theme.ForegroundDim);
     }
 
-    private static Color RarityColor(Myria.Lib.Core.Systems.Enums.ItemRarity r) => r switch
+    private static Color RarityColor(string r) => r switch
     {
         Myria.Lib.Core.Systems.Enums.ItemRarity.Uncommon  => new Color(30,  200, 80),
         Myria.Lib.Core.Systems.Enums.ItemRarity.Rare      => new Color(60,  120, 220),

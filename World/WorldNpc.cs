@@ -15,7 +15,7 @@ public sealed class WorldNpc
     public Vector3               Position      { get; set; }
     public string                Name          { get; }
     public string[]              DialogueLines { get; }
-    public VertexPositionColor[] MeshVerts     { get; }
+    public VertexPositionColorTexture[] MeshVerts     { get; }
     public int[]                 MeshIdx       { get; }
     /// <summary>Underlying Myria.Lib.Core NPC, used for quest and shop lookups.</summary>
     public Npc                   Source        { get; }
@@ -37,9 +37,9 @@ public sealed class WorldNpc
         (MeshVerts, MeshIdx) = BuildMesh();
     }
 
-    private static (VertexPositionColor[], int[]) BuildMesh()
+    private static (VertexPositionColorTexture[], int[]) BuildMesh()
     {
-        var verts = new List<VertexPositionColor>();
+        var verts = new List<VertexPositionColorTexture>();
         var idx   = new List<int>();
         // Body (green robe — distinct from blue player and red/dark monsters)
         MeshBuilder.AddBox(verts, idx,
@@ -58,7 +58,7 @@ public sealed class WorldNpc
     /// Creates WorldNpc entities for every navmesh room that has NpcRefs populated.
     /// NPCs that have a matching WorldBuilding are placed inside that building's interior face.
     /// </summary>
-    public static List<WorldNpc> SpawnAll(NavMesh mesh, IReadOnlyList<WorldBuilding> buildings)
+    public static List<WorldNpc> SpawnAll(NavMesh mesh, IReadOnlyList<WorldBuilding> buildings, float[] heights)
     {
         var result = new List<WorldNpc>();
 
@@ -85,6 +85,15 @@ public sealed class WorldNpc
                     ? new Vector3(bldg.CenterX, 0f, bldg.CenterZ)
                     : centroid + offsets[ni];
 
+                // The spacing offset can push an NPC just outside this face's polygon
+                // (or a building center can land in a neighbouring face) — re-resolve
+                // the face for the final (x, z) so the height sample lines up with the
+                // ground actually rendered under it, falling back to the room's own
+                // face if the offset point isn't inside any face at all.
+                int groundFace = mesh.FindFaceIndex(new Vector2(pos.X, pos.Z));
+                if (groundFace < 0) groundFace = fi;
+                pos.Y = TerrainHeights.GetHeight(heights, mesh, groundFace, pos.X, pos.Z);
+
                 result.Add(new WorldNpc(pos, name, dialogue, npc));
             }
         }
@@ -97,8 +106,10 @@ public sealed class WorldNpc
         try
         {
             string t = npc.ToString();
-            string name = string.IsNullOrWhiteSpace(t) || t == npc.NameKey ? npc.Id : t;
-            return WorldDataService.AsciiSafe(name);
+            // Localization.T returns "[key]" for a missing translation — fall back to the
+            // raw NPC id rather than showing the bracketed key to the player.
+            bool missing = string.IsNullOrWhiteSpace(t) || (t.StartsWith('[') && t.EndsWith(']'));
+            return WorldDataService.AsciiSafe(missing ? npc.Id : t);
         }
         catch { return npc.Id; }
     }

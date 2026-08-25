@@ -17,6 +17,10 @@ public static class NavMeshLoader
         PropertyNameCaseInsensitive = true
     };
 
+    private static string NormalizeGatheringType(string type) =>
+        Myria.Lib.Core.Systems.Enums.GatheringType.AllBuiltIn
+            .FirstOrDefault(t => t.Equals(type, StringComparison.OrdinalIgnoreCase)) ?? type;
+
     public static NavMesh Load(string path)
     {
         var dto = JsonSerializer.Deserialize<MeshDto>(File.ReadAllText(path), _opts)
@@ -35,8 +39,7 @@ public static class NavMeshLoader
             NpcPlacements = f.Npcs?.Select(n => new NpcPlacement(n.Id, n.X, n.Z)).ToArray()
                             ?? [],
             GatherNodes   = f.GatherNodes?.Select(g => new GatherNodePlacement(
-                                Enum.Parse<Myria.Lib.Core.Systems.Enums.GatheringType>(g.Type, ignoreCase: true),
-                                g.Label, g.X, g.Z)).ToArray()
+                                NormalizeGatheringType(g.Type), g.Label, g.X, g.Z)).ToArray()
                             ?? [],
         }).ToArray();
 
