@@ -2,3 +2,18 @@ bin/
 obj/
 *.user
 .vs/
+
+## Secrets (never commit real secrets)
+.env
+.env.*
+secrets.json
+appsettings.Development.json
+appsettings.Local.json
+appsettings.local.json
+*.pfx
+*.pem
+*.key
+*.p12
+
+## Local runtime state
+Data/settings.json
